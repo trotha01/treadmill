@@ -84,6 +84,7 @@ milk model =
                , height 100
                , style
                     [ ( "position", "absolute" )
+                    , ( "top", "100px" )
                     ]
                ]
         )
@@ -95,7 +96,7 @@ treadmill =
     svg
         [ style
             [ ( "position", "absolute" )
-            , ( "top", "100px" )
+            , ( "top", "200px" )
             ]
         ]
         [ Svg.rect [ fill "black", x "0", y "0", rx "15", ry "15", Svg.Attributes.width "500", Svg.Attributes.height "2" ] [] ]
