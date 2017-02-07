@@ -12,16 +12,29 @@ import Animation exposing (px)
 
 
 type alias Model =
+    { items : List ( Int, Item ) }
+
+
+type alias Item =
     { style : Animation.State }
 
 
+init : ( Model, Cmd Msg )
 init =
-    ( { style =
-            Animation.style
-                [ Animation.left (px 300) ]
-      }
-    , Cmd.none
-    )
+    ( { items = initItems }, Cmd.none )
+
+
+initItem : Item
+initItem =
+    { style =
+        Animation.style
+            [ Animation.left (px 300) ]
+    }
+
+
+initItems : List ( Int, Item )
+initItems =
+    [ ( 0, initItem ) ]
 
 
 
@@ -33,30 +46,48 @@ type Msg
     | Start
 
 
+startItemAnimation : Item -> Item
+startItemAnimation item =
+    { item
+        | style =
+            Animation.interrupt
+                [ Animation.to
+                    [ Animation.left (px 30)
+                    ]
+                ]
+                item.style
+    }
+
+
+updateItemAnimation : Animation.Msg -> Item -> Item
+updateItemAnimation animMsg item =
+    { item | style = Animation.update animMsg item.style }
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Start ->
-            ( { model
-                | style =
-                    Animation.interrupt
-                        [ Animation.to
-                            [ Animation.left (px 30)
-                            ]
-                        ]
-                        model.style
-              }
-            , Cmd.none
-            )
+            let
+                items =
+                    List.map
+                        (\( id, item ) ->
+                            ( id, startItemAnimation item )
+                        )
+                        model.items
+            in
+                ( { model | items = items }, Cmd.none )
 
         Animate animMsg ->
             let
-                newModel =
-                    { model
-                        | style = Animation.update animMsg model.style
-                    }
+                items =
+                    List.map
+                        (\( id, item ) ->
+                            ( id, updateItemAnimation animMsg item )
+                        )
+                        model.items
             in
-                ( newModel, Cmd.none )
+                ( { model | items = items }, Cmd.none )
 
 
 
@@ -65,9 +96,10 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    -- model
     Html.div []
-        [ start, treadmill, milk model ]
+        ([ start, treadmill ]
+            ++ (List.map (\( _, item ) -> milk item) model.items)
+        )
 
 
 start : Html Msg
@@ -75,10 +107,10 @@ start =
     Html.button [ onClick Start ] [ Html.text "Start" ]
 
 
-milk : Model -> Html Msg
-milk model =
+milk : Item -> Html Msg
+milk item =
     Html.img
-        (Animation.render model.style
+        ((Animation.render item.style)
             ++ [ src "imgs/milk.jpg"
                , width 100
                , height 100
@@ -108,7 +140,7 @@ treadmill =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Animation.subscription Animate [ model.style ]
+    Animation.subscription Animate (List.map (\( _, i ) -> i.style) model.items)
 
 
 
