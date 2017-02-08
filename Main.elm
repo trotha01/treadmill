@@ -6,17 +6,31 @@ import Html.Events exposing (..)
 import Svg exposing (Svg, svg)
 import Svg.Attributes exposing (fill, x, y, rx, ry)
 import Animation exposing (px)
+import Animation.Messenger
 
 
+{-
+   TODO:
+   - remove items from screen when off the left side
+   - Add word of items to click on
+   - Change items into buttons to click on
+   - Check if item matches word
+-}
 -- MODEL
 
 
 type alias Model =
-    { items : List ( Int, Item ) }
+    { items : List Item }
+
+
+type alias ID =
+    Int
 
 
 type alias Item =
-    { style : Animation.State }
+    { id : ID
+    , style : Animation.Messenger.State Msg
+    }
 
 
 init : ( Model, Cmd Msg )
@@ -24,17 +38,25 @@ init =
     ( { items = initItems }, Cmd.none )
 
 
-initItem : Item
-initItem =
-    { style =
+initItem : ID -> Float -> Item
+initItem id start =
+    { id = id
+    , style =
         Animation.style
-            [ Animation.left (px 300) ]
+            [ Animation.left (px start) ]
     }
 
 
-initItems : List ( Int, Item )
+( start, finish ) =
+    ( 300, 30 )
+
+
+initItems : List Item
 initItems =
-    [ ( 0, initItem ) ]
+    [ (initItem 0 start)
+    , (initItem 1 500)
+    , (initItem 2 700)
+    ]
 
 
 
@@ -44,6 +66,7 @@ initItems =
 type Msg
     = Animate Animation.Msg
     | Start
+    | Done Int
 
 
 startItemAnimation : Item -> Item
@@ -52,16 +75,21 @@ startItemAnimation item =
         | style =
             Animation.interrupt
                 [ Animation.to
-                    [ Animation.left (px 30)
+                    [ Animation.left (px finish)
                     ]
+                , Animation.Messenger.send (Done (Debug.log "start" item.id))
                 ]
                 item.style
     }
 
 
-updateItemAnimation : Animation.Msg -> Item -> Item
+updateItemAnimation : Animation.Msg -> Item -> ( Item, Cmd Msg )
 updateItemAnimation animMsg item =
-    { item | style = Animation.update animMsg item.style }
+    let
+        ( style, cmd ) =
+            Animation.Messenger.update animMsg item.style
+    in
+        ( { item | style = style }, cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -70,22 +98,27 @@ update msg model =
         Start ->
             let
                 items =
-                    List.map
-                        (\( id, item ) ->
-                            ( id, startItemAnimation item )
-                        )
-                        model.items
+                    List.map startItemAnimation model.items
             in
                 ( { model | items = items }, Cmd.none )
 
         Animate animMsg ->
             let
+                itemCmds =
+                    List.map (updateItemAnimation animMsg) model.items
+
+                ( items, cmds ) =
+                    List.unzip itemCmds
+            in
+                ( { model | items = items }, Cmd.batch cmds )
+
+        Done doneId ->
+            let
                 items =
-                    List.map
-                        (\( id, item ) ->
-                            ( id, updateItemAnimation animMsg item )
-                        )
-                        model.items
+                    List.filter (\item -> item.id == doneId) model.items
+
+                _ =
+                    Debug.log "done" doneId
             in
                 ( { model | items = items }, Cmd.none )
 
@@ -97,13 +130,13 @@ update msg model =
 view : Model -> Html Msg
 view model =
     Html.div []
-        ([ start, treadmill ]
-            ++ (List.map (\( _, item ) -> milk item) model.items)
+        ([ startButton, treadmill ]
+            ++ (List.map milk model.items)
         )
 
 
-start : Html Msg
-start =
+startButton : Html Msg
+startButton =
     Html.button [ onClick Start ] [ Html.text "Start" ]
 
 
@@ -138,9 +171,14 @@ treadmill =
 -- SUBSCRIPTIONS
 
 
+itemStyles : List Item -> List (Animation.Messenger.State Msg)
+itemStyles items =
+    List.map .style items
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Animation.subscription Animate (List.map (\( _, i ) -> i.style) model.items)
+    Animation.subscription Animate (itemStyles model.items)
 
 
 
