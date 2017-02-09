@@ -24,7 +24,6 @@ import List.Zipper as Zipper exposing (..)
 
 type alias Model =
     { items : Maybe (Zipper Item)
-    , treadmillImgs : List Img
     }
 
 
@@ -36,6 +35,7 @@ type alias Item =
     { id : ID
     , word : String
     , imgs : List Img
+    , treadmill : Bool
     }
 
 
@@ -48,9 +48,7 @@ type alias Img =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { items = initItems
-      , treadmillImgs = []
-      }
+    ( { items = initItems }
     , Cmd.none
     )
 
@@ -59,6 +57,7 @@ initItem : ID -> Item
 initItem id =
     { id = id
     , word = "milk"
+    , treadmill = False
     , imgs =
         [ (initImg 0 start)
         , (initImg 1 500)
@@ -109,7 +108,7 @@ startImgAnimation img =
                 [ Animation.to
                     [ Animation.left (px finish)
                     ]
-                , Animation.Messenger.send (Done (Debug.log "start" img.id))
+                , Animation.Messenger.send (Done img.id)
                 ]
                 img.style
     }
