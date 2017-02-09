@@ -7,20 +7,25 @@ import Svg exposing (Svg, svg)
 import Svg.Attributes exposing (fill, x, y, rx, ry)
 import Animation exposing (px)
 import Animation.Messenger
+import List.Zipper as Zipper exposing (..)
 
 
 {-
    TODO:
-   - remove items from screen when off the left side
-   - Add word of items to click on
-   - Change items into buttons to click on
-   - Check if item matches word
+   - remove imgs from screen when off the left side
+   - Add word of imgs to click on
+   - Change imgs into buttons to click on
+   - Check if img matches word
+   - Have list of visible items, and list of all items
+   - get zipper list working
 -}
 -- MODEL
 
 
 type alias Model =
-    { items : List Item }
+    { items : Maybe (Zipper Item)
+    , treadmillImgs : List Img
+    }
 
 
 type alias ID =
@@ -29,18 +34,43 @@ type alias ID =
 
 type alias Item =
     { id : ID
+    , word : String
+    , imgs : List Img
+    }
+
+
+type alias Img =
+    { id : ID
+    , src : String
     , style : Animation.Messenger.State Msg
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { items = initItems }, Cmd.none )
+    ( { items = initItems
+      , treadmillImgs = []
+      }
+    , Cmd.none
+    )
 
 
-initItem : ID -> Float -> Item
-initItem id start =
+initItem : ID -> Item
+initItem id =
     { id = id
+    , word = "milk"
+    , imgs =
+        [ (initImg 0 start)
+        , (initImg 1 500)
+        , (initImg 2 700)
+        ]
+    }
+
+
+initImg : ID -> Float -> Img
+initImg id start =
+    { id = id
+    , src = "imgs/milk.jpg"
     , style =
         Animation.style
             [ Animation.left (px start) ]
@@ -51,12 +81,9 @@ initItem id start =
     ( 300, 30 )
 
 
-initItems : List Item
+initItems : Maybe (Zipper Item)
 initItems =
-    [ (initItem 0 start)
-    , (initItem 1 500)
-    , (initItem 2 700)
-    ]
+    Zipper.fromList [ (initItem 0) ]
 
 
 
@@ -71,25 +98,42 @@ type Msg
 
 startItemAnimation : Item -> Item
 startItemAnimation item =
-    { item
+    { item | imgs = List.map startImgAnimation item.imgs }
+
+
+startImgAnimation : Img -> Img
+startImgAnimation img =
+    { img
         | style =
             Animation.interrupt
                 [ Animation.to
                     [ Animation.left (px finish)
                     ]
-                , Animation.Messenger.send (Done (Debug.log "start" item.id))
+                , Animation.Messenger.send (Done (Debug.log "start" img.id))
                 ]
-                item.style
+                img.style
     }
 
 
 updateItemAnimation : Animation.Msg -> Item -> ( Item, Cmd Msg )
 updateItemAnimation animMsg item =
     let
-        ( style, cmd ) =
-            Animation.Messenger.update animMsg item.style
+        imgCmds =
+            List.map (updateImgAnimation animMsg) item.imgs
+
+        ( imgs, cmds ) =
+            List.unzip imgCmds
     in
-        ( { item | style = style }, cmd )
+        ( { item | imgs = imgs }, Cmd.batch cmds )
+
+
+updateImgAnimation : Animation.Msg -> Img -> ( Img, Cmd Msg )
+updateImgAnimation animMsg img =
+    let
+        ( style, cmd ) =
+            Animation.Messenger.update animMsg img.style
+    in
+        ( { img | style = style }, cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -98,29 +142,30 @@ update msg model =
         Start ->
             let
                 items =
-                    List.map startItemAnimation model.items
+                    Maybe.map (Zipper.map startItemAnimation) model.items
             in
                 ( { model | items = items }, Cmd.none )
 
         Animate animMsg ->
             let
                 itemCmds =
-                    List.map (updateItemAnimation animMsg) model.items
+                    Maybe.map (Zipper.map (updateItemAnimation animMsg)) model.items
 
                 ( items, cmds ) =
-                    List.unzip itemCmds
+                    List.unzip (listFromZipper itemCmds)
             in
-                ( { model | items = items }, Cmd.batch cmds )
+                ( { model | items = Zipper.fromList items }, Cmd.batch cmds )
 
         Done doneId ->
             let
-                items =
-                    List.filter (\item -> item.id == doneId) model.items
-
+                {-
+                   items =
+                       List.filter (\item -> item.id == doneId) model.items
+                -}
                 _ =
                     Debug.log "done" doneId
             in
-                ( { model | items = items }, Cmd.none )
+                ( model, Cmd.none )
 
 
 
@@ -131,7 +176,7 @@ view : Model -> Html Msg
 view model =
     Html.div []
         ([ startButton, treadmill ]
-            ++ (List.map milk model.items)
+            ++ (List.concat (List.map (.imgs >> (List.map milk)) <| listFromZipper model.items))
         )
 
 
@@ -140,11 +185,11 @@ startButton =
     Html.button [ onClick Start ] [ Html.text "Start" ]
 
 
-milk : Item -> Html Msg
-milk item =
+milk : Img -> Html Msg
+milk img =
     Html.img
-        ((Animation.render item.style)
-            ++ [ src "imgs/milk.jpg"
+        ((Animation.render img.style)
+            ++ [ src img.src
                , width 100
                , height 100
                , style
@@ -171,9 +216,25 @@ treadmill =
 -- SUBSCRIPTIONS
 
 
-itemStyles : List Item -> List (Animation.Messenger.State Msg)
+imgStyles : List Img -> List (Animation.Messenger.State Msg)
+imgStyles imgs =
+    List.map .style imgs
+
+
+listFromZipper : Maybe (Zipper a) -> List a
+listFromZipper zipper =
+    case zipper of
+        Nothing ->
+            []
+
+        Just zipper ->
+            Zipper.toList zipper
+
+
+itemStyles : Maybe (Zipper Item) -> List (Animation.Messenger.State Msg)
 itemStyles items =
-    List.map .style items
+    (List.map (.imgs >> imgStyles) <| listFromZipper items)
+        |> List.concat
 
 
 subscriptions : Model -> Sub Msg
