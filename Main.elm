@@ -8,6 +8,7 @@ import Svg.Attributes exposing (fill, x, y, rx, ry)
 import Animation exposing (px)
 import Animation.Messenger
 import List.Zipper as Zipper exposing (..)
+import Random exposing (Generator)
 
 
 {-
@@ -16,14 +17,14 @@ import List.Zipper as Zipper exposing (..)
    - Add word of imgs to click on
    - Change imgs into buttons to click on
    - Check if img matches word
-   - Have list of visible items, and list of all items
-   - get zipper list working
 -}
 -- MODEL
 
 
 type alias Model =
     { items : Maybe (Zipper Item)
+    , treadmill : List Item
+    , seed : Random.Seed
     }
 
 
@@ -35,7 +36,6 @@ type alias Item =
     { id : ID
     , word : String
     , imgs : List Img
-    , treadmill : Bool
     }
 
 
@@ -48,28 +48,30 @@ type alias Img =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { items = initItems }
+    ( { items = initItems
+      , treadmill = []
+      , seed = Random.initialSeed 0
+      }
     , Cmd.none
     )
 
 
-initItem : ID -> Item
-initItem id =
+initItem : ID -> String -> String -> Item
+initItem id word imgSrc =
     { id = id
-    , word = "milk"
-    , treadmill = False
+    , word = word
     , imgs =
-        [ (initImg 0 start)
-        , (initImg 1 500)
-        , (initImg 2 700)
+        [ (initImg 0 start imgSrc)
+        , (initImg 1 500 imgSrc)
+        , (initImg 2 700 imgSrc)
         ]
     }
 
 
-initImg : ID -> Float -> Img
-initImg id start =
+initImg : ID -> Float -> String -> Img
+initImg id start imgSrc =
     { id = id
-    , src = "imgs/milk.jpg"
+    , src = imgSrc
     , style =
         Animation.style
             [ Animation.left (px start) ]
@@ -82,7 +84,36 @@ initImg id start =
 
 initItems : Maybe (Zipper Item)
 initItems =
-    Zipper.fromList [ (initItem 0) ]
+    Zipper.fromList
+        [ (initItem 0 "milk" "imgs/milk.jpg")
+        , (initItem 0 "coffee" "imgs/coffee.png")
+        ]
+
+
+randItem : Maybe (Zipper Item) -> Generator (Maybe Item)
+randItem items =
+    let
+        itemList =
+            listFromZipper items
+
+        len =
+            List.length itemList
+
+        i =
+            Random.int 0 (len - 1)
+
+        item =
+            Random.map (listAt itemList) i
+    in
+        item
+
+
+{-|
+  listAt returns the item in the list at position n
+-}
+listAt : List a -> Int -> Maybe a
+listAt items n =
+    List.drop n items |> List.head
 
 
 
@@ -93,6 +124,49 @@ type Msg
     = Animate Animation.Msg
     | Start
     | Done Int
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        Start ->
+            let
+                ( newItem, newSeed ) =
+                    Random.step (randItem model.items) model.seed
+
+                newAnimatedItem =
+                    Maybe.map startItemAnimation newItem
+
+                newModel =
+                    case (Debug.log "Adding" newAnimatedItem) of
+                        Nothing ->
+                            { model | seed = newSeed }
+
+                        Just animatedItem ->
+                            { model | seed = newSeed, treadmill = animatedItem :: model.treadmill }
+            in
+                ( newModel, Cmd.none )
+
+        Animate animMsg ->
+            let
+                itemCmds =
+                    List.map (updateItemAnimation animMsg) model.treadmill
+
+                ( items, cmds ) =
+                    List.unzip itemCmds
+            in
+                ( { model | treadmill = items }, Cmd.batch cmds )
+
+        Done doneId ->
+            let
+                {-
+                   items =
+                       List.filter (\item -> item.id == doneId) model.items
+                -}
+                _ =
+                    Debug.log "done" doneId
+            in
+                ( model, Cmd.none )
 
 
 startItemAnimation : Item -> Item
@@ -135,38 +209,6 @@ updateImgAnimation animMsg img =
         ( { img | style = style }, cmd )
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Start ->
-            let
-                items =
-                    Maybe.map (Zipper.map startItemAnimation) model.items
-            in
-                ( { model | items = items }, Cmd.none )
-
-        Animate animMsg ->
-            let
-                itemCmds =
-                    Maybe.map (Zipper.map (updateItemAnimation animMsg)) model.items
-
-                ( items, cmds ) =
-                    List.unzip (listFromZipper itemCmds)
-            in
-                ( { model | items = Zipper.fromList items }, Cmd.batch cmds )
-
-        Done doneId ->
-            let
-                {-
-                   items =
-                       List.filter (\item -> item.id == doneId) model.items
-                -}
-                _ =
-                    Debug.log "done" doneId
-            in
-                ( model, Cmd.none )
-
-
 
 -- VIEW
 
@@ -175,7 +217,12 @@ view : Model -> Html Msg
 view model =
     Html.div []
         ([ startButton, treadmill ]
-            ++ (List.concat (List.map (.imgs >> (List.map milk)) <| listFromZipper model.items))
+            ++ (model.treadmill
+                    |> List.concat
+                    << (List.map .imgs)
+                    |> List.map milk
+               )
+         -- ++ (List.concat (List.map (.imgs >> (List.map milk)) <| listFromZipper model.items))
         )
 
 
@@ -230,15 +277,15 @@ listFromZipper zipper =
             Zipper.toList zipper
 
 
-itemStyles : Maybe (Zipper Item) -> List (Animation.Messenger.State Msg)
+itemStyles : List Item -> List (Animation.Messenger.State Msg)
 itemStyles items =
-    (List.map (.imgs >> imgStyles) <| listFromZipper items)
+    List.map (.imgs >> imgStyles) items
         |> List.concat
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Animation.subscription Animate (itemStyles model.items)
+    Animation.subscription Animate (itemStyles model.treadmill)
 
 
 
