@@ -30,6 +30,8 @@ type alias Model =
     , treadmill : List Item
     , seed : Random.Seed
     , windowSize : Window.Size
+    , points : Int
+    , notice : String
     }
 
 
@@ -57,6 +59,8 @@ init =
       , treadmill = []
       , seed = Random.initialSeed 0
       , windowSize = { width = 500, height = 500 }
+      , points = 0
+      , notice = ""
       }
     , Task.perform Resize (Window.size)
     )
@@ -64,8 +68,8 @@ init =
 
 initItems : Zipper Item
 initItems =
-    Zipper.singleton (initItem 0 "milk" "imgs/milk.jpg")
-        |> Zipper.appendItem (initItem 1 "coffee" "imgs/coffee.png")
+    Zipper.singleton (initItem 0 "leche" "imgs/milk.jpg")
+        |> Zipper.appendItem (initItem 1 "café" "imgs/coffee.png")
 
 
 initItem : ID -> String -> String -> Item
@@ -126,11 +130,25 @@ type Msg
     | Start
     | Done Int
     | Resize Window.Size
+    | ItemClicked Item
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ItemClicked clickedItem ->
+            let
+                currentItem =
+                    Zipper.current model.items
+
+                ( notice, points ) =
+                    if clickedItem.id == currentItem.id then
+                        ( "Yes!", model.points + 10 )
+                    else
+                        ( "Try Again!", model.points )
+            in
+                ( { model | notice = notice, points = points }, Cmd.none )
+
         Resize newSize ->
             ( { model | windowSize = newSize }, Cmd.none )
 
@@ -230,13 +248,27 @@ updateImgAnimation animMsg img =
 view : Model -> Html Msg
 view model =
     Html.div []
-        ([ startButton, treadmill model ]
+        ([ startButton
+         , word model
+         , treadmill model
+         , Html.text (toString model.points)
+         , Html.text model.notice
+         ]
             ++ (model.treadmill
-                    |> List.map .imgs
-                    |> List.map Zipper.current
-                    |> List.map viewImg
+                    |> List.map viewItem
                )
         )
+
+
+word : Model -> Html Msg
+word model =
+    let
+        currentWord =
+            model.items
+                |> Zipper.current
+                |> .word
+    in
+        Html.div [] [ Html.text currentWord ]
 
 
 startButton : Html Msg
@@ -244,20 +276,26 @@ startButton =
     Html.button [ onClick Start ] [ Html.text "Start" ]
 
 
-viewImg : Img -> Html Msg
-viewImg img =
-    Html.img
-        ((Animation.render img.style)
-            ++ [ src img.src
-               , width 100
-               , height 100
-               , style
-                    [ ( "position", "absolute" )
-                    , ( "top", "100px" )
-                    ]
-               ]
-        )
-        []
+viewItem : Item -> Html Msg
+viewItem item =
+    let
+        img =
+            Zipper.current item.imgs
+    in
+        Html.button [ onClick (ItemClicked item) ]
+            [ Html.img
+                ((Animation.render img.style)
+                    ++ [ src img.src
+                       , width 100
+                       , height 100
+                       , style
+                            [ ( "position", "absolute" )
+                            , ( "top", "100px" )
+                            ]
+                       ]
+                )
+                []
+            ]
 
 
 treadmill : Model -> Html Msg
