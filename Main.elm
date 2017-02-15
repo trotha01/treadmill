@@ -10,6 +10,8 @@ import Animation.Messenger
 import Zipper as Zipper exposing (..)
 import Random exposing (Generator)
 import Task
+import Time
+import Ease
 import Window
 
 
@@ -71,7 +73,7 @@ initItem id word imgSrc =
     { id = id
     , word = word
     , imgs =
-        Zipper.singleton (initImg 0 start imgSrc)
+        Zipper.singleton (initImg 0 -500 imgSrc)
             |> Zipper.appendList
                 [ (initImg 1 500 imgSrc)
                 , (initImg 2 700 imgSrc)
@@ -87,10 +89,6 @@ initImg id start imgSrc =
         Animation.style
             [ Animation.left (px start) ]
     }
-
-
-( start, finish ) =
-    ( 300, 30 )
 
 
 randItem : Zipper Item -> Generator (Maybe Item)
@@ -133,12 +131,8 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Resize w ->
-            let
-                _ =
-                    Debug.log "size" w
-            in
-                ( model, Cmd.none )
+        Resize newSize ->
+            ( { model | windowSize = newSize }, Cmd.none )
 
         Start ->
             let
@@ -146,7 +140,7 @@ update msg model =
                     Random.step (randItem model.items) model.seed
 
                 newAnimatedItem =
-                    Maybe.map startItemAnimation newItem
+                    Maybe.map (startItemAnimation model.windowSize.width -100) newItem
 
                 newModel =
                     case newAnimatedItem of
@@ -184,18 +178,21 @@ update msg model =
                 ( { model | treadmill = newTreadmill }, Cmd.none )
 
 
-startItemAnimation : Item -> Item
-startItemAnimation item =
-    { item | imgs = Zipper.mapCurrent startImgAnimation item.imgs }
+startItemAnimation : Int -> Int -> Item -> Item
+startItemAnimation start end item =
+    { item | imgs = Zipper.mapCurrent (startImgAnimation start end) item.imgs }
 
 
-startImgAnimation : Img -> Img
-startImgAnimation img =
+startImgAnimation : Int -> Int -> Img -> Img
+startImgAnimation start end img =
     { img
         | style =
             Animation.interrupt
-                [ Animation.to
-                    [ Animation.left (px finish)
+                [ Animation.set
+                    [ Animation.left (px <| toFloat start)
+                    ]
+                , Animation.toWith (Animation.easing { duration = Time.second * 5, ease = Ease.linear })
+                    [ Animation.left (px <| toFloat end)
                     ]
                 , Animation.Messenger.send (Done img.id)
                 ]
@@ -233,7 +230,7 @@ updateImgAnimation animMsg img =
 view : Model -> Html Msg
 view model =
     Html.div []
-        ([ startButton, treadmill ]
+        ([ startButton, treadmill model ]
             ++ (model.treadmill
                     |> List.map .imgs
                     |> List.map Zipper.current
@@ -263,15 +260,17 @@ viewImg img =
         []
 
 
-treadmill : Html Msg
-treadmill =
+treadmill : Model -> Html Msg
+treadmill model =
     svg
         [ style
             [ ( "position", "absolute" )
             , ( "top", "200px" )
+            , ( "width", (toString model.windowSize.width) ++ "px" )
+            , ( "left", "0px" )
             ]
         ]
-        [ Svg.rect [ fill "black", x "0", y "0", rx "15", ry "15", Svg.Attributes.width "500", Svg.Attributes.height "2" ] [] ]
+        [ Svg.rect [ fill "black", x "0", y "0", rx "3", ry "3", Svg.Attributes.width "100%", Svg.Attributes.height "4" ] [] ]
 
 
 
