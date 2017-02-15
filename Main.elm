@@ -32,6 +32,7 @@ type alias Model =
     , windowSize : Window.Size
     , points : Int
     , notice : String
+    , running : Bool
     }
 
 
@@ -61,6 +62,7 @@ init =
       , windowSize = { width = 500, height = 500 }
       , points = 0
       , notice = ""
+      , running = True
       }
     , Task.perform Resize (Window.size)
     )
@@ -77,21 +79,21 @@ initItem id word imgSrc =
     { id = id
     , word = word
     , imgs =
-        Zipper.singleton (initImg 0 -500 imgSrc)
+        Zipper.singleton (initImg 0 imgSrc)
             |> Zipper.appendList
-                [ (initImg 1 500 imgSrc)
-                , (initImg 2 700 imgSrc)
+                [ (initImg 1 imgSrc)
+                , (initImg 2 imgSrc)
                 ]
     }
 
 
-initImg : ID -> Float -> String -> Img
-initImg id start imgSrc =
+initImg : ID -> String -> Img
+initImg id imgSrc =
     { id = id
     , src = imgSrc
     , style =
         Animation.style
-            [ Animation.left (px start) ]
+            [ Animation.left (px -500) ]
     }
 
 
@@ -128,14 +130,41 @@ listAt items n =
 type Msg
     = Animate Animation.Msg
     | Start
+    | Stop
     | Done Int
     | Resize Window.Size
+    | Tick Time.Time
+    | NewWord Time.Time
     | ItemClicked Item
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NewWord _ ->
+            ( { model | items = Zipper.next model.items |> Maybe.withDefault (Zipper.first model.items) }, Cmd.none )
+
+        Tick _ ->
+            if model.running then
+                let
+                    ( newItem, newSeed ) =
+                        Random.step (randItem model.items) model.seed
+
+                    newAnimatedItem =
+                        Maybe.map (startItemAnimation model.windowSize.width -100) newItem
+
+                    newModel =
+                        case newAnimatedItem of
+                            Nothing ->
+                                { model | seed = newSeed }
+
+                            Just animatedItem ->
+                                { model | seed = newSeed, treadmill = model.treadmill ++ [ animatedItem ] }
+                in
+                    ( newModel, Cmd.none )
+            else
+                ( model, Cmd.none )
+
         ItemClicked clickedItem ->
             let
                 currentItem =
@@ -153,22 +182,10 @@ update msg model =
             ( { model | windowSize = newSize }, Cmd.none )
 
         Start ->
-            let
-                ( newItem, newSeed ) =
-                    Random.step (randItem model.items) model.seed
+            ( { model | running = True }, Cmd.none )
 
-                newAnimatedItem =
-                    Maybe.map (startItemAnimation model.windowSize.width -100) newItem
-
-                newModel =
-                    case newAnimatedItem of
-                        Nothing ->
-                            { model | seed = newSeed }
-
-                        Just animatedItem ->
-                            { model | seed = newSeed, treadmill = model.treadmill ++ [ animatedItem ] }
-            in
-                ( newModel, Cmd.none )
+        Stop ->
+            ( { model | running = False }, Cmd.none )
 
         Animate animMsg ->
             let
@@ -249,15 +266,26 @@ view : Model -> Html Msg
 view model =
     Html.div []
         ([ startButton
+         , stopButton
          , word model
          , treadmill model
-         , Html.text (toString model.points)
-         , Html.text model.notice
+         , points model
+         , notice model
          ]
             ++ (model.treadmill
                     |> List.map viewItem
                )
         )
+
+
+points : Model -> Html Msg
+points model =
+    Html.h4 [] [ Html.text <| toString model.points ]
+
+
+notice : Model -> Html Msg
+notice model =
+    Html.h4 [] [ Html.text model.notice ]
 
 
 word : Model -> Html Msg
@@ -268,7 +296,12 @@ word model =
                 |> Zipper.current
                 |> .word
     in
-        Html.div [] [ Html.text currentWord ]
+        Html.h3 [] [ Html.text currentWord ]
+
+
+stopButton : Html Msg
+stopButton =
+    Html.button [ onClick Stop ] [ Html.text "Stop" ]
 
 
 startButton : Html Msg
@@ -282,20 +315,19 @@ viewItem item =
         img =
             Zipper.current item.imgs
     in
-        Html.button [ onClick (ItemClicked item) ]
-            [ Html.img
-                ((Animation.render img.style)
-                    ++ [ src img.src
-                       , width 100
-                       , height 100
-                       , style
-                            [ ( "position", "absolute" )
-                            , ( "top", "100px" )
-                            ]
-                       ]
-                )
-                []
-            ]
+        Html.img
+            ((Animation.render img.style)
+                ++ [ src img.src
+                   , onClick (ItemClicked item)
+                   , width 100
+                   , height 100
+                   , style
+                        [ ( "position", "absolute" )
+                        , ( "top", "300px" )
+                        ]
+                   ]
+            )
+            []
 
 
 treadmill : Model -> Html Msg
@@ -303,7 +335,7 @@ treadmill model =
     svg
         [ style
             [ ( "position", "absolute" )
-            , ( "top", "200px" )
+            , ( "top", "400px" )
             , ( "width", (toString model.windowSize.width) ++ "px" )
             , ( "left", "0px" )
             ]
@@ -322,19 +354,10 @@ imgStyles imgs =
         |> Zipper.toList
 
 
-listFromZipper : Maybe (Zipper a) -> List a
-listFromZipper zipper =
-    case zipper of
-        Nothing ->
-            []
-
-        Just zipper ->
-            Zipper.toList zipper
-
-
 itemStyles : List Item -> List (Animation.Messenger.State Msg)
 itemStyles items =
-    List.map (.imgs >> imgStyles) items
+    items
+        |> List.map (.imgs >> imgStyles)
         |> List.concat
 
 
@@ -343,6 +366,8 @@ subscriptions model =
     Sub.batch
         [ Animation.subscription Animate
             (itemStyles model.treadmill)
+        , Time.every Time.second Tick
+        , Time.every (Time.second * 5) NewWord
         , Window.resizes Resize
         ]
 
