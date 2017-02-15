@@ -13,6 +13,7 @@ import Task
 import Time
 import Ease
 import Window
+import Item
 
 
 {-
@@ -26,8 +27,8 @@ import Window
 
 
 type alias Model =
-    { items : Zipper Item
-    , treadmill : List Item
+    { items : Zipper (Item.Model Msg)
+    , treadmill : List (Item.Model Msg)
     , seed : Random.Seed
     , windowSize : Window.Size
     , points : Int
@@ -36,27 +37,30 @@ type alias Model =
     }
 
 
-type alias Item =
-    { id : ID
-    , word : String
-    , imgs : Zipper Img
-    }
+
+{-
+   type alias Item =
+       { id : ID
+       , word : String
+       , imgs : Zipper Img
+       }
 
 
-type alias Img =
-    { id : ID
-    , src : String
-    , style : Animation.Messenger.State Msg
-    }
+   type alias Img =
+       { id : ID
+       , src : String
+       , style : Animation.Messenger.State Msg
+       }
 
 
-type alias ID =
-    Int
+   type alias ID =
+       Int
+-}
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { items = initItems
+    ( { items = Item.initItems
       , treadmill = []
       , seed = Random.initialSeed 0
       , windowSize = { width = 500, height = 500 }
@@ -68,62 +72,63 @@ init =
     )
 
 
-initItems : Zipper Item
-initItems =
-    Zipper.singleton (initItem 0 "leche" "imgs/milk.jpg")
-        |> Zipper.appendItem (initItem 1 "café" "imgs/coffee.png")
+
+{-
+      initItems : Zipper Item
+      initItems =
+          Zipper.singleton (initItem 0 "leche" "imgs/milk.jpg")
+              |> Zipper.appendItem (initItem 1 "café" "imgs/coffee.png")
 
 
-initItem : ID -> String -> String -> Item
-initItem id word imgSrc =
-    { id = id
-    , word = word
-    , imgs =
-        Zipper.singleton (initImg 0 imgSrc)
-            |> Zipper.appendList
-                [ (initImg 1 imgSrc)
-                , (initImg 2 imgSrc)
-                ]
-    }
+      initItem : ID -> String -> String -> Item
+      initItem id word imgSrc =
+          { id = id
+          , word = word
+          , imgs =
+              Zipper.singleton (initImg 0 imgSrc)
+                  |> Zipper.appendList
+                      [ (initImg 1 imgSrc)
+                      , (initImg 2 imgSrc)
+                      ]
+          }
 
 
-initImg : ID -> String -> Img
-initImg id imgSrc =
-    { id = id
-    , src = imgSrc
-    , style =
-        Animation.style
-            [ Animation.left (px -500) ]
-    }
+      initImg : ID -> String -> Img
+      initImg id imgSrc =
+          { id = id
+          , src = imgSrc
+          , style =
+              Animation.style
+                  [ Animation.left (px -500) ]
+          }
 
 
-randItem : Zipper Item -> Generator (Maybe Item)
-randItem items =
-    let
-        itemList =
-            Zipper.toList items
+      randItem : Zipper Item -> Generator (Maybe Item)
+      randItem items =
+          let
+              itemList =
+                  Zipper.toList items
 
-        len =
-            List.length itemList
+              len =
+                  List.length itemList
 
-        i =
-            Random.int 0 (len - 1)
+              i =
+                  Random.int 0 (len - 1)
 
-        item =
-            Random.map (listAt itemList) i
-    in
-        item
+              item =
+                  Random.map (listAt itemList) i
+          in
+              item
 
 
-{-|
-  listAt returns the item in the list at position n
+   {-|
+     listAt returns the item in the list at position n
+   -}
+   listAt : List a -> Int -> Maybe a
+   listAt items n =
+       List.drop n items |> List.head
+
 -}
-listAt : List a -> Int -> Maybe a
-listAt items n =
-    List.drop n items |> List.head
-
-
-
 -- UPDATE
 
 
@@ -135,7 +140,7 @@ type Msg
     | Resize Window.Size
     | Tick Time.Time
     | NewWord Time.Time
-    | ItemClicked Item
+    | ItemClicked (Item.Model Msg)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -148,10 +153,10 @@ update msg model =
             if model.running then
                 let
                     ( newItem, newSeed ) =
-                        Random.step (randItem model.items) model.seed
+                        Random.step (Item.randItem model.items) model.seed
 
                     newAnimatedItem =
-                        Maybe.map (startItemAnimation model.windowSize.width -100) newItem
+                        Maybe.map (Item.startItemAnimation Done model.windowSize.width -100) newItem
 
                     newModel =
                         case newAnimatedItem of
@@ -190,7 +195,7 @@ update msg model =
         Animate animMsg ->
             let
                 itemCmds =
-                    List.map (updateItemAnimation animMsg) model.treadmill
+                    List.map (Item.updateItemAnimation animMsg) model.treadmill
 
                 ( items, cmds ) =
                     List.unzip itemCmds
@@ -213,52 +218,53 @@ update msg model =
                 ( { model | treadmill = newTreadmill }, Cmd.none )
 
 
-startItemAnimation : Int -> Int -> Item -> Item
-startItemAnimation start end item =
-    { item | imgs = Zipper.mapCurrent (startImgAnimation start end) item.imgs }
+
+{-
+   startItemAnimation : Int -> Int -> Item -> Item
+   startItemAnimation start end item =
+       { item | imgs = Zipper.mapCurrent (startImgAnimation start end) item.imgs }
 
 
-startImgAnimation : Int -> Int -> Img -> Img
-startImgAnimation start end img =
-    { img
-        | style =
-            Animation.interrupt
-                [ Animation.set
-                    [ Animation.left (px <| toFloat start)
-                    ]
-                , Animation.toWith (Animation.easing { duration = Time.second * 5, ease = Ease.linear })
-                    [ Animation.left (px <| toFloat end)
-                    ]
-                , Animation.Messenger.send (Done img.id)
-                ]
-                img.style
-    }
+   startImgAnimation : Int -> Int -> Img -> Img
+   startImgAnimation start end img =
+       { img
+           | style =
+               Animation.interrupt
+                   [ Animation.set
+                       [ Animation.left (px <| toFloat start)
+                       ]
+                   , Animation.toWith (Animation.easing { duration = Time.second * 5, ease = Ease.linear })
+                       [ Animation.left (px <| toFloat end)
+                       ]
+                   , Animation.Messenger.send (Done img.id)
+                   ]
+                   img.style
+       }
 
 
-updateItemAnimation : Animation.Msg -> Item -> ( Item, Cmd Msg )
-updateItemAnimation animMsg item =
-    let
-        ( newImg, cmd ) =
-            item.imgs
-                |> Zipper.current
-                |> updateImgAnimation animMsg
+   updateItemAnimation : Animation.Msg -> Item -> ( Item, Cmd Msg )
+   updateItemAnimation animMsg item =
+       let
+           ( newImg, cmd ) =
+               item.imgs
+                   |> Zipper.current
+                   |> updateImgAnimation animMsg
 
-        newImgs =
-            Zipper.mapCurrent (\_ -> newImg) item.imgs
-    in
-        ( { item | imgs = newImgs }, cmd )
-
-
-updateImgAnimation : Animation.Msg -> Img -> ( Img, Cmd Msg )
-updateImgAnimation animMsg img =
-    let
-        ( style, cmd ) =
-            Animation.Messenger.update animMsg img.style
-    in
-        ( { img | style = style }, cmd )
+           newImgs =
+               Zipper.mapCurrent (\_ -> newImg) item.imgs
+       in
+           ( { item | imgs = newImgs }, cmd )
 
 
+   updateImgAnimation : Animation.Msg -> Img -> ( Img, Cmd Msg )
+   updateImgAnimation animMsg img =
+       let
+           ( style, cmd ) =
+               Animation.Messenger.update animMsg img.style
+       in
+           ( { img | style = style }, cmd )
 
+-}
 -- VIEW
 
 
@@ -273,7 +279,7 @@ view model =
          , notice model
          ]
             ++ (model.treadmill
-                    |> List.map viewItem
+                    |> List.map (Item.viewItem ItemClicked)
                )
         )
 
@@ -309,25 +315,28 @@ startButton =
     Html.button [ onClick Start ] [ Html.text "Start" ]
 
 
-viewItem : Item -> Html Msg
-viewItem item =
-    let
-        img =
-            Zipper.current item.imgs
-    in
-        Html.img
-            ((Animation.render img.style)
-                ++ [ src img.src
-                   , onClick (ItemClicked item)
-                   , width 100
-                   , height 100
-                   , style
-                        [ ( "position", "absolute" )
-                        , ( "top", "300px" )
-                        ]
-                   ]
-            )
-            []
+
+{-
+   viewItem : Item -> Html Msg
+   viewItem item =
+       let
+           img =
+               Zipper.current item.imgs
+       in
+           Html.img
+               ((Animation.render img.style)
+                   ++ [ src img.src
+                      , onClick (ItemClicked item)
+                      , width 100
+                      , height 100
+                      , style
+                           [ ( "position", "absolute" )
+                           , ( "top", "300px" )
+                           ]
+                      ]
+               )
+               []
+-}
 
 
 treadmill : Model -> Html Msg
@@ -347,14 +356,16 @@ treadmill model =
 -- SUBSCRIPTIONS
 
 
-imgStyles : Zipper Img -> List (Animation.Messenger.State Msg)
+{-| TODO: move these to Item module?
+-}
+imgStyles : Zipper (Item.Img Msg) -> List (Animation.Messenger.State Msg)
 imgStyles imgs =
     imgs
         |> Zipper.map .style
         |> Zipper.toList
 
 
-itemStyles : List Item -> List (Animation.Messenger.State Msg)
+itemStyles : List (Item.Model Msg) -> List (Animation.Messenger.State Msg)
 itemStyles items =
     items
         |> List.map (.imgs >> imgStyles)
