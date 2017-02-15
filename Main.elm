@@ -9,11 +9,13 @@ import Animation exposing (px)
 import Animation.Messenger
 import Zipper as Zipper exposing (..)
 import Random exposing (Generator)
+import Task
+import Window
 
 
 {-
    TODO:
-   - remove imgs from screen when off the left side
+   - treadmill matches window size
    - Add word of imgs to click on
    - Change imgs into buttons to click on
    - Check if img matches word
@@ -25,6 +27,7 @@ type alias Model =
     { items : Zipper Item
     , treadmill : List Item
     , seed : Random.Seed
+    , windowSize : Window.Size
     }
 
 
@@ -51,8 +54,9 @@ init =
     ( { items = initItems
       , treadmill = []
       , seed = Random.initialSeed 0
+      , windowSize = { width = 500, height = 500 }
       }
-    , Cmd.none
+    , Task.perform Resize (Window.size)
     )
 
 
@@ -60,15 +64,6 @@ initItems : Zipper Item
 initItems =
     Zipper.singleton (initItem 0 "milk" "imgs/milk.jpg")
         |> Zipper.appendItem (initItem 1 "coffee" "imgs/coffee.png")
-
-
-
-{-
-   Zipper.fromList
-       [ (initItem 0 "milk" "imgs/milk.jpg")
-       , (initItem 1 "coffee" "imgs/coffee.png")
-       ]
--}
 
 
 initItem : ID -> String -> String -> Item
@@ -132,11 +127,19 @@ type Msg
     = Animate Animation.Msg
     | Start
     | Done Int
+    | Resize Window.Size
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Resize w ->
+            let
+                _ =
+                    Debug.log "size" w
+            in
+                ( model, Cmd.none )
+
         Start ->
             let
                 ( newItem, newSeed ) =
@@ -146,7 +149,7 @@ update msg model =
                     Maybe.map startItemAnimation newItem
 
                 newModel =
-                    case (Debug.log "Adding" newAnimatedItem) of
+                    case newAnimatedItem of
                         Nothing ->
                             { model | seed = newSeed }
 
@@ -300,7 +303,11 @@ itemStyles items =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Animation.subscription Animate (itemStyles model.treadmill)
+    Sub.batch
+        [ Animation.subscription Animate
+            (itemStyles model.treadmill)
+        , Window.resizes Resize
+        ]
 
 
 
