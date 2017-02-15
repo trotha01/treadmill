@@ -7,7 +7,7 @@ import Svg exposing (Svg, svg)
 import Svg.Attributes exposing (fill, x, y, rx, ry)
 import Animation exposing (px)
 import Animation.Messenger
-import List.Zipper as Zipper exposing (..)
+import Zipper as Zipper exposing (..)
 import Random exposing (Generator)
 
 
@@ -22,20 +22,16 @@ import Random exposing (Generator)
 
 
 type alias Model =
-    { items : Maybe (Zipper Item)
+    { items : Zipper Item
     , treadmill : List Item
     , seed : Random.Seed
     }
 
 
-type alias ID =
-    Int
-
-
 type alias Item =
     { id : ID
     , word : String
-    , imgs : List Img
+    , imgs : Zipper Img
     }
 
 
@@ -44,6 +40,10 @@ type alias Img =
     , src : String
     , style : Animation.Messenger.State Msg
     }
+
+
+type alias ID =
+    Int
 
 
 init : ( Model, Cmd Msg )
@@ -56,15 +56,31 @@ init =
     )
 
 
+initItems : Zipper Item
+initItems =
+    Zipper.singleton (initItem 0 "milk" "imgs/milk.jpg")
+        |> Zipper.appendItem (initItem 1 "coffee" "imgs/coffee.png")
+
+
+
+{-
+   Zipper.fromList
+       [ (initItem 0 "milk" "imgs/milk.jpg")
+       , (initItem 1 "coffee" "imgs/coffee.png")
+       ]
+-}
+
+
 initItem : ID -> String -> String -> Item
 initItem id word imgSrc =
     { id = id
     , word = word
     , imgs =
-        [ (initImg 0 start imgSrc)
-        , (initImg 1 500 imgSrc)
-        , (initImg 2 700 imgSrc)
-        ]
+        Zipper.singleton (initImg 0 start imgSrc)
+            |> Zipper.appendList
+                [ (initImg 1 500 imgSrc)
+                , (initImg 2 700 imgSrc)
+                ]
     }
 
 
@@ -82,19 +98,11 @@ initImg id start imgSrc =
     ( 300, 30 )
 
 
-initItems : Maybe (Zipper Item)
-initItems =
-    Zipper.fromList
-        [ (initItem 0 "milk" "imgs/milk.jpg")
-        , (initItem 0 "coffee" "imgs/coffee.png")
-        ]
-
-
-randItem : Maybe (Zipper Item) -> Generator (Maybe Item)
+randItem : Zipper Item -> Generator (Maybe Item)
 randItem items =
     let
         itemList =
-            listFromZipper items
+            Zipper.toList items
 
         len =
             List.length itemList
@@ -171,7 +179,7 @@ update msg model =
 
 startItemAnimation : Item -> Item
 startItemAnimation item =
-    { item | imgs = List.map startImgAnimation item.imgs }
+    { item | imgs = Zipper.mapCurrent startImgAnimation item.imgs }
 
 
 startImgAnimation : Img -> Img
@@ -191,13 +199,15 @@ startImgAnimation img =
 updateItemAnimation : Animation.Msg -> Item -> ( Item, Cmd Msg )
 updateItemAnimation animMsg item =
     let
-        imgCmds =
-            List.map (updateImgAnimation animMsg) item.imgs
+        ( newImg, cmd ) =
+            item.imgs
+                |> Zipper.current
+                |> updateImgAnimation animMsg
 
-        ( imgs, cmds ) =
-            List.unzip imgCmds
+        newImgs =
+            Zipper.mapCurrent (\_ -> newImg) item.imgs
     in
-        ( { item | imgs = imgs }, Cmd.batch cmds )
+        ( { item | imgs = newImgs }, cmd )
 
 
 updateImgAnimation : Animation.Msg -> Img -> ( Img, Cmd Msg )
@@ -218,11 +228,10 @@ view model =
     Html.div []
         ([ startButton, treadmill ]
             ++ (model.treadmill
-                    |> List.concat
-                    << (List.map .imgs)
-                    |> List.map milk
+                    |> List.map .imgs
+                    |> List.map Zipper.current
+                    |> List.map viewImg
                )
-         -- ++ (List.concat (List.map (.imgs >> (List.map milk)) <| listFromZipper model.items))
         )
 
 
@@ -231,8 +240,8 @@ startButton =
     Html.button [ onClick Start ] [ Html.text "Start" ]
 
 
-milk : Img -> Html Msg
-milk img =
+viewImg : Img -> Html Msg
+viewImg img =
     Html.img
         ((Animation.render img.style)
             ++ [ src img.src
@@ -262,9 +271,11 @@ treadmill =
 -- SUBSCRIPTIONS
 
 
-imgStyles : List Img -> List (Animation.Messenger.State Msg)
+imgStyles : Zipper Img -> List (Animation.Messenger.State Msg)
 imgStyles imgs =
-    List.map .style imgs
+    imgs
+        |> Zipper.map .style
+        |> Zipper.toList
 
 
 listFromZipper : Maybe (Zipper a) -> List a
