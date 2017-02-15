@@ -151,7 +151,7 @@ update msg model =
                             { model | seed = newSeed }
 
                         Just animatedItem ->
-                            { model | seed = newSeed, treadmill = animatedItem :: model.treadmill }
+                            { model | seed = newSeed, treadmill = model.treadmill ++ [ animatedItem ] }
             in
                 ( newModel, Cmd.none )
 
@@ -167,14 +167,18 @@ update msg model =
 
         Done doneId ->
             let
-                {-
-                   items =
-                       List.filter (\item -> item.id == doneId) model.items
-                -}
+                newTreadmill =
+                    case model.treadmill of
+                        item :: items ->
+                            items
+
+                        items ->
+                            items
+
                 _ =
                     Debug.log "done" doneId
             in
-                ( model, Cmd.none )
+                ( { model | treadmill = newTreadmill }, Cmd.none )
 
 
 startItemAnimation : Item -> Item
