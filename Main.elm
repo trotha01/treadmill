@@ -153,8 +153,8 @@ view model =
          , stopButton
          , points model
          , word model
-         , treadmill model
          , notice model
+         , treadmill model
          ]
             ++ (model.treadmill
                     |> List.map (Item.viewItem ItemClicked)
@@ -169,7 +169,7 @@ points model =
 
 notice : Model -> Html Msg
 notice model =
-    Html.h4 [] [ Html.text model.notice ]
+    Html.h4 [ style [ ( "text-align", "center" ) ] ] [ Html.text model.notice ]
 
 
 word : Model -> Html Msg

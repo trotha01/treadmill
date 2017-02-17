@@ -144,22 +144,40 @@ viewItem clickMsg item =
 -- HELPERS
 
 
+{-| randItem returns the focus item 10% of the time
+    and other items 90% of the time
+-}
 randItem : Zipper (Model msg) -> Generator (Maybe (Model msg))
 randItem items =
     let
-        itemList =
-            Zipper.toList items
+        ( preferredItem, otherItems ) =
+            ( Zipper.current items, Zipper.before items ++ Zipper.after items )
 
         len =
-            List.length itemList
+            List.length otherItems
 
         i =
             Random.int 0 (len - 1)
 
         item =
-            Random.map (listAt itemList) i
+            Random.int 1 10
+                |> Random.andThen
+                    (xPercentChance
+                        (Random.map (\_ -> Just preferredItem) Random.bool)
+                        (Random.map (listAt otherItems) i)
+                    )
     in
         item
+
+
+xPercentChance : Generator a -> Generator a -> Int -> Generator a
+xPercentChance a b x =
+    case x of
+        1 ->
+            a
+
+        _ ->
+            b
 
 
 {-|
