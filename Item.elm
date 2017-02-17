@@ -33,8 +33,8 @@ initItems =
     Zipper.fromListWithFocus
         (initItem "leche" "imgs/milk.jpg" [])
         [ (initItem "café" "imgs/coffee.png" [])
-        , (initItem "silla" "imgs/chair-antique.png" [ "imgs/table-with-chairs.png" ])
-        , (initItem "mesa" "imgs/table.png" [ "imgs/table-with-chairs.png" ])
+        , (initItem "silla" "imgs/chair-antique.png" [ "imgs/design-chair.jpg" ])
+        , (initItem "mesa" "imgs/table.png" [ "imgs/folding-table.png" ])
         ]
 
 
@@ -67,7 +67,12 @@ initImg imgSrc =
 
 startItemAnimation : (Img msg -> msg) -> Int -> Int -> Model msg -> Model msg
 startItemAnimation doneMsg start end item =
-    { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) item.imgs }
+    let
+        newImgs =
+            Zipper.safeNext
+                item.imgs
+    in
+        { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) newImgs }
 
 
 startImgAnimation : (Img msg -> msg) -> Int -> Int -> Img msg -> Img msg

@@ -20,6 +20,7 @@ module Zipper
         , first
         , previous
         , next
+        , safeNext
         , last
         , find
         )
@@ -39,7 +40,7 @@ module Zipper
 @docs map, indexedMap, mapBefore, mapCurrent, mapAfter, foldl
 
 # Moving around
-@docs first, previous, next, last, find
+@docs first, previous, next, safeNext, last, find
 
 -}
 
@@ -225,6 +226,18 @@ next (Zipper ls x rs) =
 
         y :: ys ->
             Just <| Zipper (x :: ls) y ys
+
+
+{-| Move the focus to the element after the element the `Zipper` is currently focussed on. If the focus is at the end, it goes to the beginning
+-}
+safeNext : Zipper a -> Zipper a
+safeNext (Zipper ls x rs) =
+    case rs of
+        [] ->
+            first (Zipper ls x rs)
+
+        y :: ys ->
+            Zipper (x :: ls) y ys
 
 
 {-| Move the focus to the last element of the list.

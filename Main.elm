@@ -21,6 +21,8 @@ import Item
    - Add more words/Imgs
    - Add grace period between words
    - get secondary images to appear
+   - make an item more likely to appear if it's the current word
+   - make image unselectable: http://stackoverflow.com/a/12906840
 -}
 -- MODEL
 
@@ -34,27 +36,6 @@ type alias Model =
     , notice : String
     , running : Bool
     }
-
-
-
-{-
-   type alias Item =
-       { id : ID
-       , word : String
-       , imgs : Zipper Img
-       }
-
-
-   type alias Img =
-       { id : ID
-       , src : String
-       , style : Animation.Messenger.State Msg
-       }
-
-
-   type alias ID =
-       Int
--}
 
 
 init : ( Model, Cmd Msg )
@@ -72,62 +53,6 @@ init =
 
 
 
-{-
-      initItems : Zipper Item
-      initItems =
-          Zipper.singleton (initItem 0 "leche" "imgs/milk.jpg")
-              |> Zipper.appendItem (initItem 1 "café" "imgs/coffee.png")
-
-
-      initItem : ID -> String -> String -> Item
-      initItem id word imgSrc =
-          { id = id
-          , word = word
-          , imgs =
-              Zipper.singleton (initImg 0 imgSrc)
-                  |> Zipper.appendList
-                      [ (initImg 1 imgSrc)
-                      , (initImg 2 imgSrc)
-                      ]
-          }
-
-
-      initImg : ID -> String -> Img
-      initImg id imgSrc =
-          { id = id
-          , src = imgSrc
-          , style =
-              Animation.style
-                  [ Animation.left (px -500) ]
-          }
-
-
-      randItem : Zipper Item -> Generator (Maybe Item)
-      randItem items =
-          let
-              itemList =
-                  Zipper.toList items
-
-              len =
-                  List.length itemList
-
-              i =
-                  Random.int 0 (len - 1)
-
-              item =
-                  Random.map (listAt itemList) i
-          in
-              item
-
-
-   {-|
-     listAt returns the item in the list at position n
-   -}
-   listAt : List a -> Int -> Maybe a
-   listAt items n =
-       List.drop n items |> List.head
-
--}
 -- UPDATE
 
 
@@ -218,52 +143,6 @@ update msg model =
 
 
 
-{-
-   startItemAnimation : Int -> Int -> Item -> Item
-   startItemAnimation start end item =
-       { item | imgs = Zipper.mapCurrent (startImgAnimation start end) item.imgs }
-
-
-   startImgAnimation : Int -> Int -> Img -> Img
-   startImgAnimation start end img =
-       { img
-           | style =
-               Animation.interrupt
-                   [ Animation.set
-                       [ Animation.left (px <| toFloat start)
-                       ]
-                   , Animation.toWith (Animation.easing { duration = Time.second * 5, ease = Ease.linear })
-                       [ Animation.left (px <| toFloat end)
-                       ]
-                   , Animation.Messenger.send (Done img.id)
-                   ]
-                   img.style
-       }
-
-
-   updateItemAnimation : Animation.Msg -> Item -> ( Item, Cmd Msg )
-   updateItemAnimation animMsg item =
-       let
-           ( newImg, cmd ) =
-               item.imgs
-                   |> Zipper.current
-                   |> updateImgAnimation animMsg
-
-           newImgs =
-               Zipper.mapCurrent (\_ -> newImg) item.imgs
-       in
-           ( { item | imgs = newImgs }, cmd )
-
-
-   updateImgAnimation : Animation.Msg -> Img -> ( Img, Cmd Msg )
-   updateImgAnimation animMsg img =
-       let
-           ( style, cmd ) =
-               Animation.Messenger.update animMsg img.style
-       in
-           ( { img | style = style }, cmd )
-
--}
 -- VIEW
 
 
@@ -312,30 +191,6 @@ stopButton =
 startButton : Html Msg
 startButton =
     Html.button [ onClick Start ] [ Html.text "Start" ]
-
-
-
-{-
-   viewItem : Item -> Html Msg
-   viewItem item =
-       let
-           img =
-               Zipper.current item.imgs
-       in
-           Html.img
-               ((Animation.render img.style)
-                   ++ [ src img.src
-                      , onClick (ItemClicked item)
-                      , width 100
-                      , height 100
-                      , style
-                           [ ( "position", "absolute" )
-                           , ( "top", "300px" )
-                           ]
-                      ]
-               )
-               []
--}
 
 
 treadmill : Model -> Html Msg
