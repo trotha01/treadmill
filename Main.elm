@@ -18,10 +18,9 @@ import Item
 
 {-
    TODO:
-   - treadmill matches window size
-   - Add word of imgs to click on
-   - Change imgs into buttons to click on
-   - Check if img matches word
+   - Add more words/Imgs
+   - Add grace period between words
+   - get secondary images to appear
 -}
 -- MODEL
 
@@ -136,7 +135,7 @@ type Msg
     = Animate Animation.Msg
     | Start
     | Stop
-    | Done Int
+    | Done (Item.Img Msg)
     | Resize Window.Size
     | Tick Time.Time
     | NewWord Time.Time
@@ -176,7 +175,7 @@ update msg model =
                     Zipper.current model.items
 
                 ( notice, points ) =
-                    if clickedItem.id == currentItem.id then
+                    if clickedItem.word == currentItem.word then
                         ( "Yes!", model.points + 10 )
                     else
                         ( "Try Again!", model.points )
@@ -202,7 +201,7 @@ update msg model =
             in
                 ( { model | treadmill = items }, Cmd.batch cmds )
 
-        Done doneId ->
+        Done img ->
             let
                 newTreadmill =
                     case model.treadmill of
@@ -213,7 +212,7 @@ update msg model =
                             items
 
                 _ =
-                    Debug.log "done" doneId
+                    Debug.log "done" img
             in
                 ( { model | treadmill = newTreadmill }, Cmd.none )
 
@@ -273,9 +272,9 @@ view model =
     Html.div []
         ([ startButton
          , stopButton
+         , points model
          , word model
          , treadmill model
-         , points model
          , notice model
          ]
             ++ (model.treadmill
@@ -302,7 +301,7 @@ word model =
                 |> Zipper.current
                 |> .word
     in
-        Html.h3 [] [ Html.text currentWord ]
+        Html.h1 [ style [ ( "text-align", "center" ) ] ] [ Html.text currentWord ]
 
 
 stopButton : Html Msg

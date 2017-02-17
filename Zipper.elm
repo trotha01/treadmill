@@ -3,6 +3,7 @@ module Zipper
         ( Zipper(..)
         , singleton
         , fromList
+        , fromListWithFocus
         , withDefault
         , appendList
         , appendItem
@@ -11,6 +12,7 @@ module Zipper
         , after
         , toList
         , map
+        , indexedMap
         , mapBefore
         , mapCurrent
         , mapAfter
@@ -28,13 +30,13 @@ module Zipper
 @docs Zipper
 
 # Constructing a `Zipper`
-@docs singleton, fromList, withDefault, appendItem, appendList
+@docs singleton, fromList, fromListWithFocus, withDefault, appendItem, appendList
 
 # Accessors
 @docs before, current, after, toList
 
 # Mapping
-@docs map, mapBefore, mapCurrent, mapAfter, foldl
+@docs map, indexedMap, mapBefore, mapCurrent, mapAfter, foldl
 
 # Moving around
 @docs first, previous, next, last, find
@@ -67,6 +69,13 @@ fromList xs =
 
         y :: ys ->
             Just (Zipper [] y ys)
+
+
+{-| Construct a `Zipper` from a list with an initial item as the focus
+-}
+fromListWithFocus : a -> List a -> Zipper a
+fromListWithFocus x xs =
+    Zipper [] x xs
 
 
 {-| Provide an alternative when constructing a `Zipper` fails.
@@ -123,6 +132,23 @@ toList z =
 map : (a -> b) -> Zipper a -> Zipper b
 map f (Zipper ls x rs) =
     Zipper (List.map f ls) (f x) (List.map f rs)
+
+
+{-| Apply a function to every element in the `Zipper` with an index.
+-}
+indexedMap : (Int -> a -> b) -> Zipper a -> Zipper b
+indexedMap f (Zipper ls x rs) =
+    let
+        newLs =
+            (List.indexedMap f ls)
+
+        ( _, newRs ) =
+            List.foldr
+                (\r ( i, nrs ) -> ( i + 1, (f i r) :: nrs ))
+                ( ((List.length ls) + 1), [] )
+                rs
+    in
+        Zipper newLs (f (List.length ls) x) newRs
 
 
 {-| Apply a function to all elements before the element the `Zipper` is focussed on.

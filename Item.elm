@@ -15,46 +15,46 @@ import Zipper as Zipper exposing (..)
 
 
 type alias Model msg =
-    { id : ID
-    , word : String
+    { word : String
     , imgs : Zipper (Img msg)
     }
 
 
 type alias Img msg =
-    { id : ID
-    , src : String
+    { src : String
     , style : Animation.Messenger.State msg
     }
 
 
-type alias ID =
-    Int
-
-
+{-| Images from https://pixabay.com
+-}
 initItems : Zipper (Model msg)
 initItems =
-    Zipper.singleton (initItem 0 "leche" "imgs/milk.jpg")
-        |> Zipper.appendItem (initItem 1 "café" "imgs/coffee.png")
+    Zipper.fromListWithFocus
+        (initItem "leche" "imgs/milk.jpg" [])
+        [ (initItem "café" "imgs/coffee.png" [])
+        , (initItem "silla" "imgs/chair-antique.png" [ "imgs/table-with-chairs.png" ])
+        , (initItem "mesa" "imgs/table.png" [ "imgs/table-with-chairs.png" ])
+        ]
 
 
-initItem : ID -> String -> String -> Model msg
-initItem id word imgSrc =
-    { id = id
-    , word = word
-    , imgs =
-        Zipper.singleton (initImg 0 imgSrc)
-            |> Zipper.appendList
-                [ (initImg 1 imgSrc)
-                , (initImg 2 imgSrc)
-                ]
-    }
+initItem : String -> String -> List String -> Model msg
+initItem word imgFocus imgSrcs =
+    let
+        imgs =
+            Zipper.fromListWithFocus imgFocus imgSrcs
+
+        initedImgs =
+            Zipper.map initImg imgs
+    in
+        { word = word
+        , imgs = initedImgs
+        }
 
 
-initImg : ID -> String -> Img msg
-initImg id imgSrc =
-    { id = id
-    , src = imgSrc
+initImg : String -> Img msg
+initImg imgSrc =
+    { src = imgSrc
     , style =
         Animation.style
             [ Animation.left (px -500) ]
@@ -65,12 +65,12 @@ initImg id imgSrc =
 -- ANIMATION
 
 
-startItemAnimation : (Int -> msg) -> Int -> Int -> Model msg -> Model msg
+startItemAnimation : (Img msg -> msg) -> Int -> Int -> Model msg -> Model msg
 startItemAnimation doneMsg start end item =
     { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) item.imgs }
 
 
-startImgAnimation : (Int -> msg) -> Int -> Int -> Img msg -> Img msg
+startImgAnimation : (Img msg -> msg) -> Int -> Int -> Img msg -> Img msg
 startImgAnimation doneMsg start end img =
     { img
         | style =
@@ -81,7 +81,7 @@ startImgAnimation doneMsg start end img =
                 , Animation.toWith (Animation.easing { duration = Time.second * 5, ease = Ease.linear })
                     [ Animation.left (px <| toFloat end)
                     ]
-                , Animation.Messenger.send (doneMsg img.id)
+                , Animation.Messenger.send (doneMsg img)
                 ]
                 img.style
     }
