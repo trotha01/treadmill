@@ -6,8 +6,9 @@ import Ease
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Time
 import Random exposing (Generator)
+import Time
+import TouchEvents as Touch exposing (..)
 import Zipper as Zipper exposing (..)
 
 
@@ -119,8 +120,8 @@ updateImgAnimation animMsg img =
 -- VIEW
 
 
-viewItem : (Model msg -> msg) -> Model msg -> Html msg
-viewItem clickMsg item =
+viewItem : (Model msg -> msg) -> (Model msg -> Touch -> msg) -> Model msg -> Html msg
+viewItem clickMsg touchMsg item =
     let
         img =
             Zipper.current item.imgs
@@ -129,6 +130,7 @@ viewItem clickMsg item =
             ((Animation.render img.style)
                 ++ [ src img.src
                    , onClick (clickMsg item)
+                   , Touch.onTouchStart (touchMsg item)
                    , width 100
                    , height 100
                    , style

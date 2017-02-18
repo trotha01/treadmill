@@ -1,19 +1,20 @@
 module Main exposing (..)
 
+import Animation exposing (px)
+import Animation.Messenger
+import Ease
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Item
+import Random exposing (Generator)
 import Svg exposing (Svg, svg)
 import Svg.Attributes exposing (fill, x, y, rx, ry)
-import Animation exposing (px)
-import Animation.Messenger
-import Zipper as Zipper exposing (..)
-import Random exposing (Generator)
 import Task
 import Time
-import Ease
+import TouchEvents as Touch exposing (..)
 import Window
-import Item
+import Zipper as Zipper exposing (..)
 
 
 {-
@@ -65,6 +66,7 @@ type Msg
     | Tick Time.Time
     | NewWord Time.Time
     | ItemClicked (Item.Model Msg)
+    | ItemTouched (Item.Model Msg) Touch
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,6 +83,9 @@ update msg model =
                 ( model, Cmd.none )
             else
                 ( addItem model, Cmd.none )
+
+        ItemTouched clickedItem _ ->
+            update (ItemClicked clickedItem) model
 
         ItemClicked clickedItem ->
             let
@@ -210,7 +215,7 @@ treadmill model =
     let
         items =
             (model.treadmill
-                |> List.map (Item.viewItem ItemClicked)
+                |> List.map (Item.viewItem ItemClicked ItemTouched)
             )
 
         belt =
