@@ -71,28 +71,16 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NewWord _ ->
-            ( { model | items = Zipper.next model.items |> Maybe.withDefault (Zipper.first model.items) }, Cmd.none )
+            if not model.running then
+                ( model, Cmd.none )
+            else
+                ( nextWord model, Cmd.none )
 
         Tick _ ->
-            if model.running then
-                let
-                    ( newItem, newSeed ) =
-                        Random.step (Item.randItem model.items) model.seed
-
-                    newAnimatedItem =
-                        Maybe.map (Item.startItemAnimation Done model.windowSize.width -100) newItem
-
-                    newModel =
-                        case newAnimatedItem of
-                            Nothing ->
-                                { model | seed = newSeed }
-
-                            Just animatedItem ->
-                                { model | seed = newSeed, treadmill = model.treadmill ++ [ animatedItem ] }
-                in
-                    ( newModel, Cmd.none )
-            else
+            if not model.running then
                 ( model, Cmd.none )
+            else
+                ( addItem model, Cmd.none )
 
         ItemClicked clickedItem ->
             let
@@ -142,13 +130,40 @@ update msg model =
                 ( { model | treadmill = newTreadmill }, Cmd.none )
 
 
+nextWord : Model -> Model
+nextWord model =
+    { model
+        | items =
+            Zipper.next model.items
+                |> Maybe.withDefault (Zipper.first model.items)
+    }
+
+
+addItem : Model -> Model
+addItem model =
+    let
+        ( newItem, newSeed ) =
+            Random.step (Item.randItem model.items) model.seed
+
+        newAnimatedItem =
+            Maybe.map (Item.startItemAnimation Done model.windowSize.width -100) newItem
+    in
+        case newAnimatedItem of
+            Nothing ->
+                { model | seed = newSeed }
+
+            Just animatedItem ->
+                { model | seed = newSeed, treadmill = model.treadmill ++ [ animatedItem ] }
+
+
 
 -- VIEW
 
 
 view : Model -> Html Msg
 view model =
-    Html.div []
+    Html.div
+        [ style [ ( "overflow", "hidden" ) ] ]
         ([ startButton
          , stopButton
          , points model

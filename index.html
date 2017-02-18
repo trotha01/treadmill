@@ -15412,7 +15412,7 @@ var _user$project$Item$randItem = function (items) {
 				_elm_lang$core$Random$map,
 				_user$project$Item$listAt(otherItems),
 				i)),
-		A2(_elm_lang$core$Random$int, 1, 10));
+		A2(_elm_lang$core$Random$int, 1, 5));
 	return item;
 };
 var _user$project$Item$viewItem = F2(
@@ -15513,7 +15513,7 @@ var _user$project$Item$startImgAnimation = F4(
 							_0: A2(
 								_mdgriffith$elm_style_animation$Animation$toWith,
 								_mdgriffith$elm_style_animation$Animation$easing(
-									{duration: _elm_lang$core$Time$second * 5, ease: _elm_community$easing_functions$Ease$linear}),
+									{duration: _elm_lang$core$Time$second * 4, ease: _elm_community$easing_functions$Ease$linear}),
 								{
 									ctor: '::',
 									_0: _mdgriffith$elm_style_animation$Animation$left(
@@ -15753,6 +15753,16 @@ var _user$project$Main$points = function (model) {
 			_1: {ctor: '[]'}
 		});
 };
+var _user$project$Main$nextWord = function (model) {
+	return _elm_lang$core$Native_Utils.update(
+		model,
+		{
+			items: A2(
+				_elm_lang$core$Maybe$withDefault,
+				_user$project$Zipper$first(model.items),
+				_user$project$Zipper$next(model.items))
+		});
+};
 var _user$project$Main$Model = F7(
 	function (a, b, c, d, e, f, g) {
 		return {items: a, treadmill: b, seed: c, windowSize: d, points: e, notice: f, running: g};
@@ -15785,64 +15795,57 @@ var _user$project$Main$init = {
 var _user$project$Main$Done = function (a) {
 	return {ctor: 'Done', _0: a};
 };
+var _user$project$Main$addItem = function (model) {
+	var _p1 = A2(
+		_elm_lang$core$Random$step,
+		_user$project$Item$randItem(model.items),
+		model.seed);
+	var newItem = _p1._0;
+	var newSeed = _p1._1;
+	var newAnimatedItem = A2(
+		_elm_lang$core$Maybe$map,
+		A3(_user$project$Item$startItemAnimation, _user$project$Main$Done, model.windowSize.width, -100),
+		newItem);
+	var _p2 = newAnimatedItem;
+	if (_p2.ctor === 'Nothing') {
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{seed: newSeed});
+	} else {
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{
+				seed: newSeed,
+				treadmill: A2(
+					_elm_lang$core$Basics_ops['++'],
+					model.treadmill,
+					{
+						ctor: '::',
+						_0: _p2._0,
+						_1: {ctor: '[]'}
+					})
+			});
+	}
+};
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		var _p1 = msg;
-		switch (_p1.ctor) {
+		var _p3 = msg;
+		switch (_p3.ctor) {
 			case 'NewWord':
-				return {
+				return (!model.running) ? {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none} : {
 					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{
-							items: A2(
-								_elm_lang$core$Maybe$withDefault,
-								_user$project$Zipper$first(model.items),
-								_user$project$Zipper$next(model.items))
-						}),
+					_0: _user$project$Main$nextWord(model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Tick':
-				if (model.running) {
-					var _p2 = A2(
-						_elm_lang$core$Random$step,
-						_user$project$Item$randItem(model.items),
-						model.seed);
-					var newItem = _p2._0;
-					var newSeed = _p2._1;
-					var newAnimatedItem = A2(
-						_elm_lang$core$Maybe$map,
-						A3(_user$project$Item$startItemAnimation, _user$project$Main$Done, model.windowSize.width, -100),
-						newItem);
-					var newModel = function () {
-						var _p3 = newAnimatedItem;
-						if (_p3.ctor === 'Nothing') {
-							return _elm_lang$core$Native_Utils.update(
-								model,
-								{seed: newSeed});
-						} else {
-							return _elm_lang$core$Native_Utils.update(
-								model,
-								{
-									seed: newSeed,
-									treadmill: A2(
-										_elm_lang$core$Basics_ops['++'],
-										model.treadmill,
-										{
-											ctor: '::',
-											_0: _p3._0,
-											_1: {ctor: '[]'}
-										})
-								});
-						}
-					}();
-					return {ctor: '_Tuple2', _0: newModel, _1: _elm_lang$core$Platform_Cmd$none};
-				} else {
-					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-				}
+				return (!model.running) ? {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none} : {
+					ctor: '_Tuple2',
+					_0: _user$project$Main$addItem(model),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
 			case 'ItemClicked':
 				var currentItem = _user$project$Zipper$current(model.items);
-				var _p4 = _elm_lang$core$Native_Utils.eq(_p1._0.word, currentItem.word) ? {ctor: '_Tuple2', _0: 'Yes!', _1: model.points + 10} : {ctor: '_Tuple2', _0: 'Try Again!', _1: model.points};
+				var _p4 = _elm_lang$core$Native_Utils.eq(_p3._0.word, currentItem.word) ? {ctor: '_Tuple2', _0: 'Yes!', _1: model.points + 10} : {ctor: '_Tuple2', _0: 'Try Again!', _1: model.points};
 				var notice = _p4._0;
 				var points = _p4._1;
 				return {
@@ -15857,7 +15860,7 @@ var _user$project$Main$update = F2(
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{windowSize: _p1._0}),
+						{windowSize: _p3._0}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'Start':
@@ -15879,7 +15882,7 @@ var _user$project$Main$update = F2(
 			case 'Animate':
 				var itemCmds = A2(
 					_elm_lang$core$List$map,
-					_user$project$Item$updateItemAnimation(_p1._0),
+					_user$project$Item$updateItemAnimation(_p3._0),
 					model.treadmill);
 				var _p5 = _elm_lang$core$List$unzip(itemCmds);
 				var items = _p5._0;
@@ -15892,7 +15895,7 @@ var _user$project$Main$update = F2(
 					_1: _elm_lang$core$Platform_Cmd$batch(cmds)
 				};
 			default:
-				var _p6 = A2(_elm_lang$core$Debug$log, 'done', _p1._0);
+				var _p6 = A2(_elm_lang$core$Debug$log, 'done', _p3._0);
 				var newTreadmill = function () {
 					var _p7 = model.treadmill;
 					if (_p7.ctor === '::') {
@@ -15939,7 +15942,16 @@ var _user$project$Main$startButton = A2(
 var _user$project$Main$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
-		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: _elm_lang$html$Html_Attributes$style(
+				{
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
+					_1: {ctor: '[]'}
+				}),
+			_1: {ctor: '[]'}
+		},
 		A2(
 			_elm_lang$core$Basics_ops['++'],
 			{

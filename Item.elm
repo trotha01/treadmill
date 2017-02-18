@@ -83,7 +83,7 @@ startImgAnimation doneMsg start end img =
                 [ Animation.set
                     [ Animation.left (px <| toFloat start)
                     ]
-                , Animation.toWith (Animation.easing { duration = Time.second * 5, ease = Ease.linear })
+                , Animation.toWith (Animation.easing { duration = Time.second * 4, ease = Ease.linear })
                     [ Animation.left (px <| toFloat end)
                     ]
                 , Animation.Messenger.send (doneMsg img)
@@ -144,8 +144,8 @@ viewItem clickMsg item =
 -- HELPERS
 
 
-{-| randItem returns the focus item 10% of the time
-    and other items 90% of the time
+{-| randItem returns the focus item 20% of the time
+    and other items 80% of the time
 -}
 randItem : Zipper (Model msg) -> Generator (Maybe (Model msg))
 randItem items =
@@ -160,7 +160,7 @@ randItem items =
             Random.int 0 (len - 1)
 
         item =
-            Random.int 1 10
+            Random.int 1 5
                 |> Random.andThen
                     (xPercentChance
                         (Random.map (\_ -> Just preferredItem) Random.bool)
@@ -170,7 +170,7 @@ randItem items =
         item
 
 
-xPercentChance : Generator a -> Generator a -> Int -> Generator a
+xPercentChance : a -> a -> Int -> a
 xPercentChance a b x =
     case x of
         1 ->
