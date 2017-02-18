@@ -163,7 +163,7 @@ addItem model =
 view : Model -> Html Msg
 view model =
     Html.div
-        [ style [ ( "overflow", "hidden" ) ] ]
+        []
         ([ startButton
          , stopButton
          , points model
@@ -171,9 +171,6 @@ view model =
          , notice model
          , treadmill model
          ]
-            ++ (model.treadmill
-                    |> List.map (Item.viewItem ItemClicked)
-               )
         )
 
 
@@ -210,15 +207,33 @@ startButton =
 
 treadmill : Model -> Html Msg
 treadmill model =
-    svg
-        [ style
-            [ ( "position", "absolute" )
-            , ( "top", "400px" )
-            , ( "width", (toString model.windowSize.width) ++ "px" )
-            , ( "left", "0px" )
+    let
+        items =
+            (model.treadmill
+                |> List.map (Item.viewItem ItemClicked)
+            )
+
+        belt =
+            svg
+                [ style
+                    [ ( "position", "absolute" )
+                    , ( "top", "100px" )
+                    , ( "width", (toString model.windowSize.width) ++ "px" )
+                    , ( "left", "0px" )
+                    ]
+                ]
+                [ Svg.rect [ fill "black", x "0", y "0", rx "3", ry "3", Svg.Attributes.width "100%", Svg.Attributes.height "4" ] [] ]
+    in
+        Html.div
+            [ style
+                [ ( "position", "absolute" )
+                , ( "overflow", "hidden" )
+                , ( "top", "300px" )
+                , ( "height", "110px" )
+                , ( "width", (toString model.windowSize.width) ++ "px" )
+                ]
             ]
-        ]
-        [ Svg.rect [ fill "black", x "0", y "0", rx "3", ry "3", Svg.Attributes.width "100%", Svg.Attributes.height "4" ] [] ]
+            (belt :: items)
 
 
 
