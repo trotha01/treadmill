@@ -169,14 +169,15 @@ view : Model -> Html Msg
 view model =
     Html.div
         []
-        ([ startButton
-         , stopButton
-         , points model
-         , word model
-         , notice model
-         , treadmill model
-         ]
-        )
+        [ Html.div [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
+            [ startButton
+            , stopButton
+            , points model
+            ]
+        , word model
+        , notice model
+        , treadmill model
+        ]
 
 
 points : Model -> Html Msg
