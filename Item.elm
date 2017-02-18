@@ -132,9 +132,7 @@ viewItem clickMsg item =
                    , width 100
                    , height 100
                    , style
-                        [ ( "position", "absolute" )
-                        , ( "top", "300px" )
-                        ]
+                        [ ( "position", "absolute" ) ]
                    ]
             )
             []
