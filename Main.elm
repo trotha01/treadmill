@@ -169,11 +169,11 @@ view : Model -> Html Msg
 view model =
     Html.div
         []
-        [ Html.div [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
-            [ startButton
-            , stopButton
-            , points model
-            ]
+        [ startButton
+        , stopButton
+        , Html.span
+            [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
+            [ points model ]
         , word model
         , notice model
         , treadmill model
@@ -182,7 +182,7 @@ view model =
 
 points : Model -> Html Msg
 points model =
-    Html.h4 [] [ Html.text <| toString model.points ]
+    Html.span [] [ Html.text <| toString model.points ]
 
 
 notice : Model -> Html Msg

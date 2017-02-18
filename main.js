@@ -15797,7 +15797,7 @@ var _user$project$Main$notice = function (model) {
 };
 var _user$project$Main$points = function (model) {
 	return A2(
-		_elm_lang$html$Html$h4,
+		_elm_lang$html$Html$span,
 		{ctor: '[]'},
 		{
 			ctor: '::',
@@ -16120,45 +16120,45 @@ var _user$project$Main$view = function (model) {
 		{ctor: '[]'},
 		{
 			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$div,
-				{
+			_0: _user$project$Main$startButton,
+			_1: {
+				ctor: '::',
+				_0: _user$project$Main$stopButton,
+				_1: {
 					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$style(
+					_0: A2(
+						_elm_lang$html$Html$span,
 						{
 							ctor: '::',
-							_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'right'},
-							_1: {
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'padding', _1: '50px'},
-								_1: {ctor: '[]'}
-							}
-						}),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: _user$project$Main$startButton,
-					_1: {
-						ctor: '::',
-						_0: _user$project$Main$stopButton,
-						_1: {
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'right'},
+									_1: {
+										ctor: '::',
+										_0: {ctor: '_Tuple2', _0: 'padding', _1: '50px'},
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						},
+						{
 							ctor: '::',
 							_0: _user$project$Main$points(model),
 							_1: {ctor: '[]'}
-						}
-					}
-				}),
-			_1: {
-				ctor: '::',
-				_0: _user$project$Main$word(model),
-				_1: {
-					ctor: '::',
-					_0: _user$project$Main$notice(model),
+						}),
 					_1: {
 						ctor: '::',
-						_0: _user$project$Main$treadmill(model),
-						_1: {ctor: '[]'}
+						_0: _user$project$Main$word(model),
+						_1: {
+							ctor: '::',
+							_0: _user$project$Main$notice(model),
+							_1: {
+								ctor: '::',
+								_0: _user$project$Main$treadmill(model),
+								_1: {ctor: '[]'}
+							}
+						}
 					}
 				}
 			}
