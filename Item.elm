@@ -56,9 +56,7 @@ initItem word imgFocus imgSrcs =
 initImg : String -> Img msg
 initImg imgSrc =
     { src = imgSrc
-    , style =
-        Animation.style
-            [ Animation.left (px -500) ]
+    , style = Animation.style [ Animation.display Animation.none ]
     }
 
 
@@ -83,11 +81,35 @@ startImgAnimation doneMsg start end img =
             Animation.interrupt
                 [ Animation.set
                     [ Animation.left (px <| toFloat start)
+                    , Animation.display Animation.block
                     ]
                 , Animation.toWith (Animation.easing { duration = Time.second * 4, ease = Ease.linear })
                     [ Animation.left (px <| toFloat end)
                     ]
                 , Animation.Messenger.send (doneMsg img)
+                ]
+                img.style
+    }
+
+
+stopItemAnimation : (Img msg -> msg) -> Int -> Int -> Model msg -> Model msg
+stopItemAnimation doneMsg start end item =
+    let
+        newImgs =
+            Zipper.safeNext
+                item.imgs
+    in
+        { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) newImgs }
+
+
+stopImgAnimation : (Img msg -> msg) -> Int -> Int -> Img msg -> Img msg
+stopImgAnimation doneMsg start end img =
+    { img
+        | style =
+            Animation.interrupt
+                [ Animation.set
+                    [ Animation.left (px <| toFloat start)
+                    ]
                 ]
                 img.style
     }
