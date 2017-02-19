@@ -19,11 +19,11 @@ import Zipper as Zipper exposing (..)
 
 {-
    TODO:
+   - Add levels
    - Add more words/Imgs
-   - Add grace period between words
    - get secondary images to appear
-   - make an item more likely to appear if it's the current word
    - make image unselectable: http://stackoverflow.com/a/12906840
+   - Delete item when clicked
 -}
 -- MODEL
 
@@ -36,6 +36,8 @@ type alias Model =
     , points : Int
     , notice : String
     , running : Bool
+    , level : Int
+    , splashScreen : Bool
     }
 
 
@@ -48,6 +50,8 @@ init =
       , points = 0
       , notice = ""
       , running = True
+      , level = 1
+      , splashScreen = True
       }
     , Task.perform Resize (Window.size)
     )
@@ -60,7 +64,6 @@ init =
 type Msg
     = Animate Animation.Msg
     | Start
-    | Stop
     | Done (Item.Img Msg)
     | Resize Window.Size
     | Tick Time.Time
@@ -71,68 +74,73 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        NewWord _ ->
-            if not model.running then
+    if model.splashScreen then
+        case msg of
+            Start ->
+                ( { model | running = True, splashScreen = False }, Cmd.none )
+
+            _ ->
                 ( model, Cmd.none )
-            else
-                ( nextWord model, Cmd.none )
-
-        Tick _ ->
-            if not model.running then
+    else
+        case msg of
+            Start ->
                 ( model, Cmd.none )
-            else
-                ( addItem model, Cmd.none )
 
-        ItemTouched clickedItem _ ->
-            update (ItemClicked clickedItem) model
+            NewWord _ ->
+                if not model.running then
+                    ( model, Cmd.none )
+                else
+                    ( nextWord model, Cmd.none )
 
-        ItemClicked clickedItem ->
-            let
-                currentItem =
-                    Zipper.current model.items
+            Tick _ ->
+                if not model.running then
+                    ( model, Cmd.none )
+                else
+                    ( addItem model, Cmd.none )
 
-                ( notice, points ) =
-                    if clickedItem.word == currentItem.word then
-                        ( "Yes!", model.points + 10 )
-                    else
-                        ( "Try Again!", model.points )
-            in
-                ( { model | notice = notice, points = points }, Cmd.none )
+            ItemTouched clickedItem _ ->
+                update (ItemClicked clickedItem) model
 
-        Resize newSize ->
-            ( { model | windowSize = newSize }, Cmd.none )
+            ItemClicked clickedItem ->
+                let
+                    currentItem =
+                        Zipper.current model.items
 
-        Start ->
-            ( { model | running = True }, Cmd.none )
+                    ( notice, points ) =
+                        if clickedItem.word == currentItem.word then
+                            ( "Yes!", model.points + 10 )
+                        else
+                            ( "Try Again!", model.points )
+                in
+                    ( { model | notice = notice, points = points }, Cmd.none )
 
-        Stop ->
-            ( { model | running = False }, Cmd.none )
+            Resize newSize ->
+                ( { model | windowSize = newSize }, Cmd.none )
 
-        Animate animMsg ->
-            let
-                itemCmds =
-                    List.map (Item.updateItemAnimation animMsg) model.treadmill
+            Animate animMsg ->
+                let
+                    itemCmds =
+                        List.map (Item.updateItemAnimation animMsg) model.treadmill
 
-                ( items, cmds ) =
-                    List.unzip itemCmds
-            in
-                ( { model | treadmill = items }, Cmd.batch cmds )
+                    ( items, cmds ) =
+                        List.unzip itemCmds
+                in
+                    ( { model | treadmill = items }, Cmd.batch cmds )
 
-        Done img ->
-            let
-                newTreadmill =
-                    case model.treadmill of
-                        item :: items ->
-                            items
+            Done img ->
+                let
+                    newTreadmill =
+                        case model.treadmill of
+                            item :: items ->
+                                items
 
-                        items ->
-                            items
+                            items ->
+                                items
 
-                _ =
-                    Debug.log "done" img
-            in
-                ( { model | treadmill = newTreadmill }, Cmd.none )
+                    _ =
+                        Debug.log "done" img
+                in
+                    ( { model | treadmill = newTreadmill }, Cmd.none )
 
 
 nextWord : Model -> Model
@@ -167,17 +175,22 @@ addItem model =
 
 view : Model -> Html Msg
 view model =
-    Html.div
-        []
-        [ startButton
-        , stopButton
-        , Html.span
-            [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
-            [ points model ]
-        , word model
-        , notice model
-        , treadmill model
-        ]
+    if model.splashScreen then
+        Html.div
+            [ style [ ( "text-align", "center" ) ] ]
+            [ Html.h1 [] [ Html.text (toString model.level) ]
+            , startButton
+            ]
+    else
+        Html.div
+            []
+            [ Html.span
+                [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
+                [ points model ]
+            , word model
+            , notice model
+            , treadmill model
+            ]
 
 
 points : Model -> Html Msg
@@ -201,14 +214,9 @@ word model =
         Html.h1 [ style [ ( "text-align", "center" ) ] ] [ Html.text currentWord ]
 
 
-stopButton : Html Msg
-stopButton =
-    Html.button [ onClick Stop ] [ Html.text "Stop" ]
-
-
 startButton : Html Msg
 startButton =
-    Html.button [ onClick Start ] [ Html.text "Start" ]
+    Html.div [] [ Html.button [ onClick Start ] [ Html.text "Start" ] ]
 
 
 treadmill : Model -> Html Msg
