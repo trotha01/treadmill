@@ -106,13 +106,27 @@ update msg model =
                     currentItem =
                         Zipper.current model.items
 
-                    ( notice, points ) =
+                    ( correct, notice, points ) =
                         if clickedItem.word == currentItem.word then
-                            ( "Yes!", model.points + 10 )
+                            ( True, "Yes!", model.points + 10 )
                         else
-                            ( "Try Again!", model.points )
+                            ( False, "Try Again!", model.points )
+
+                    ( splashScreen, level ) =
+                        if correct && points /= 0 && (points % 50 == 0) then
+                            -- Level Up
+                            ( True, model.level + 1 )
+                        else
+                            ( False, model.level )
                 in
-                    ( { model | notice = notice, points = points }, Cmd.none )
+                    ( { model
+                        | notice = notice
+                        , points = points
+                        , splashScreen = splashScreen
+                        , level = level
+                      }
+                    , Cmd.none
+                    )
 
             Resize newSize ->
                 ( { model | windowSize = newSize }, Cmd.none )
@@ -177,8 +191,16 @@ view : Model -> Html Msg
 view model =
     if model.splashScreen then
         Html.div
-            [ style [ ( "text-align", "center" ) ] ]
-            [ Html.h1 [] [ Html.text (toString model.level) ]
+            [ style
+                [ ( "text-align", "center" )
+                , ( "background-color", "lightblue" )
+                , ( "height", (toString model.windowSize.height) ++ "px" )
+                , ( "padding", "50px" )
+                , ( "border", "6px solid black" )
+                ]
+            ]
+            [ Html.h1 [] [ Html.text ("Level " ++ (toString model.level)) ]
+            , Html.div [ style [ ( "margin", "10px" ) ] ] [ points model ]
             , startButton
             ]
     else
@@ -195,7 +217,7 @@ view model =
 
 points : Model -> Html Msg
 points model =
-    Html.span [] [ Html.text <| toString model.points ]
+    Html.span [] [ Html.text <| "Points: " ++ (toString model.points) ]
 
 
 notice : Model -> Html Msg
@@ -214,9 +236,24 @@ word model =
         Html.h1 [ style [ ( "text-align", "center" ) ] ] [ Html.text currentWord ]
 
 
+buttonStyle : Html.Attribute Msg
+buttonStyle =
+    style
+        [ ( "background-color", "#041d25" )
+        , ( "border", "none" )
+        , ( "color", "white" )
+        , ( "padding", "15px 32px" )
+        , ( "text-align", "center" )
+        , ( "text-decoration", "none" )
+        , ( "display", "inline-block" )
+        , ( "font-size", "16px" )
+        ]
+
+
 startButton : Html Msg
 startButton =
-    Html.div [] [ Html.button [ onClick Start ] [ Html.text "Start" ] ]
+    Html.div []
+        [ Html.button [ buttonStyle, onClick Start ] [ Html.text "Start" ] ]
 
 
 treadmill : Model -> Html Msg
