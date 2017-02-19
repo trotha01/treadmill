@@ -22,7 +22,6 @@ import Zipper as Zipper exposing (..)
    - Add more words/Imgs
    - Add grace period between words
    - get secondary images to appear
-   - make an item more likely to appear if it's the current word
    - make image unselectable: http://stackoverflow.com/a/12906840
 -}
 -- MODEL
