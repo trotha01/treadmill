@@ -79,6 +79,9 @@ update msg model =
             Start ->
                 ( { model | running = True, splashScreen = False }, Cmd.none )
 
+            Resize newSize ->
+                ( { model | windowSize = Debug.log "new size" newSize }, Cmd.none )
+
             _ ->
                 ( model, Cmd.none )
     else
@@ -112,12 +115,12 @@ update msg model =
                         else
                             ( False, "Try Again!", model.points )
 
-                    ( splashScreen, level ) =
+                    ( splashScreen, level, treadmill ) =
                         if correct && points /= 0 && (points % 50 == 0) then
                             -- Level Up
-                            ( True, model.level + 1 )
+                            ( True, model.level + 1, [] )
                         else
-                            ( False, model.level )
+                            ( False, model.level, model.treadmill )
                 in
                     ( { model
                         | notice = notice
@@ -129,7 +132,7 @@ update msg model =
                     )
 
             Resize newSize ->
-                ( { model | windowSize = newSize }, Cmd.none )
+                ( { model | windowSize = Debug.log "new size" newSize }, Cmd.none )
 
             Animate animMsg ->
                 let
@@ -190,6 +193,28 @@ addItem model =
 view : Model -> Html Msg
 view model =
     if model.splashScreen then
+        splashScreenView model
+    else
+        Html.div
+            []
+            [ Html.span
+                [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
+                [ pointsView model ]
+            , word model
+            , notice model
+            , treadmill model
+            ]
+
+
+splashScreenView : Model -> Html Msg
+splashScreenView model =
+    let
+        points =
+            if model.level == 1 then
+                []
+            else
+                [ Html.div [ style [ ( "margin", "10px" ) ] ] [ pointsView model ] ]
+    in
         Html.div
             [ style
                 [ ( "text-align", "center" )
@@ -199,24 +224,15 @@ view model =
                 , ( "border", "6px solid black" )
                 ]
             ]
-            [ Html.h1 [] [ Html.text ("Level " ++ (toString model.level)) ]
-            , Html.div [ style [ ( "margin", "10px" ) ] ] [ points model ]
-            , startButton
-            ]
-    else
-        Html.div
-            []
-            [ Html.span
-                [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
-                [ points model ]
-            , word model
-            , notice model
-            , treadmill model
-            ]
+            ([ Html.h1 [] [ Html.text ("Level " ++ (toString model.level)) ]
+             , startButton
+             ]
+                ++ points
+            )
 
 
-points : Model -> Html Msg
-points model =
+pointsView : Model -> Html Msg
+pointsView model =
     Html.span [] [ Html.text <| "Points: " ++ (toString model.points) ]
 
 
