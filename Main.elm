@@ -20,9 +20,11 @@ import Zipper as Zipper exposing (..)
 
 {-
    TODO:
+   - Add levels
    - Add more words/Imgs
    - get secondary images to appear
    - make image unselectable: http://stackoverflow.com/a/12906840
+   - Delete item when clicked
 -}
 -- MODEL
 
@@ -243,7 +245,6 @@ splashScreenView model =
                 , ( "padding", "50px" )
                 , ( "border", "6px solid black" )
                 ]
-            , onClick Start
             ]
             ([ Html.h1 [] [ Html.text ("Level " ++ (toString model.level)) ]
              ]
@@ -273,28 +274,24 @@ word model =
         Html.h1 [ style [ ( "text-align", "center" ) ] ] [ Html.text currentWord ]
 
 
-
-{-
-   buttonStyle : Html.Attribute Msg
-   buttonStyle =
-       style
-           [ ( "background-color", "#041d25" )
-           , ( "border", "none" )
-           , ( "color", "white" )
-           , ( "padding", "15px 32px" )
-           , ( "text-align", "center" )
-           , ( "text-decoration", "none" )
-           , ( "display", "inline-block" )
-           , ( "font-size", "16px" )
-           ]
-
--}
+buttonStyle : Html.Attribute Msg
+buttonStyle =
+    style
+        [ ( "background-color", "#041d25" )
+        , ( "border", "none" )
+        , ( "color", "white" )
+        , ( "padding", "15px 32px" )
+        , ( "text-align", "center" )
+        , ( "text-decoration", "none" )
+        , ( "display", "inline-block" )
+        , ( "font-size", "16px" )
+        ]
 
 
 startButton : Html Msg
 startButton =
-    Html.div []
-        [ Html.text "Click Anywhere to Start" ]
+    Html.div [ onClick Start ]
+        [ Html.button [ buttonStyle, onClick Start ] [ Html.text "Start" ] ]
 
 
 treadmill : Model -> Html Msg
