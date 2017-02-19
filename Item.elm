@@ -93,6 +93,29 @@ startImgAnimation doneMsg start end img =
     }
 
 
+stopItemAnimation : (Img msg -> msg) -> Int -> Int -> Model msg -> Model msg
+stopItemAnimation doneMsg start end item =
+    let
+        newImgs =
+            Zipper.safeNext
+                item.imgs
+    in
+        { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) newImgs }
+
+
+stopImgAnimation : (Img msg -> msg) -> Int -> Int -> Img msg -> Img msg
+stopImgAnimation doneMsg start end img =
+    { img
+        | style =
+            Animation.interrupt
+                [ Animation.set
+                    [ Animation.left (px <| toFloat start)
+                    ]
+                ]
+                img.style
+    }
+
+
 updateItemAnimation : Animation.Msg -> Model msg -> ( Model msg, Cmd msg )
 updateItemAnimation animMsg item =
     let
