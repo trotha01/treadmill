@@ -35,7 +35,6 @@ type alias Model =
     , windowSize : Window.Size
     , points : Int
     , notice : String
-    , running : Bool
     , level : Int
     , splashScreen : Bool
     }
@@ -49,7 +48,6 @@ init =
       , windowSize = { width = 500, height = 500 }
       , points = 0
       , notice = ""
-      , running = True
       , level = 1
       , splashScreen = True
       }
@@ -77,10 +75,20 @@ update msg model =
     if model.splashScreen then
         case msg of
             Start ->
-                ( { model | running = True, splashScreen = False }, Cmd.none )
+                ( { model | splashScreen = False }, Cmd.none )
 
             Resize newSize ->
                 ( { model | windowSize = Debug.log "new size" newSize }, Cmd.none )
+
+            Animate animMsg ->
+                let
+                    itemCmds =
+                        List.map (Item.updateItemAnimation animMsg) model.treadmill
+
+                    ( items, cmds ) =
+                        List.unzip itemCmds
+                in
+                    ( { model | treadmill = items }, Cmd.batch cmds )
 
             _ ->
                 ( model, Cmd.none )
@@ -90,16 +98,10 @@ update msg model =
                 ( model, Cmd.none )
 
             NewWord _ ->
-                if not model.running then
-                    ( model, Cmd.none )
-                else
-                    ( nextWord model, Cmd.none )
+                ( nextWord model, Cmd.none )
 
             Tick _ ->
-                if not model.running then
-                    ( model, Cmd.none )
-                else
-                    ( addItem model, Cmd.none )
+                ( addItem model, Cmd.none )
 
             ItemTouched clickedItem _ ->
                 update (ItemClicked clickedItem) model
@@ -115,12 +117,12 @@ update msg model =
                         else
                             ( False, "Try Again!", model.points )
 
-                    ( splashScreen, level, treadmill ) =
+                    ( splashScreen, level ) =
                         if correct && points /= 0 && (points % 50 == 0) then
                             -- Level Up
-                            ( True, model.level + 1, [] )
+                            ( True, model.level + 1 )
                         else
-                            ( False, model.level, model.treadmill )
+                            ( False, model.level )
                 in
                     ( { model
                         | notice = notice
@@ -223,11 +225,12 @@ splashScreenView model =
                 , ( "padding", "50px" )
                 , ( "border", "6px solid black" )
                 ]
+            , onClick Start
             ]
             ([ Html.h1 [] [ Html.text ("Level " ++ (toString model.level)) ]
-             , startButton
              ]
                 ++ points
+                ++ [ startButton ]
             )
 
 
@@ -252,24 +255,28 @@ word model =
         Html.h1 [ style [ ( "text-align", "center" ) ] ] [ Html.text currentWord ]
 
 
-buttonStyle : Html.Attribute Msg
-buttonStyle =
-    style
-        [ ( "background-color", "#041d25" )
-        , ( "border", "none" )
-        , ( "color", "white" )
-        , ( "padding", "15px 32px" )
-        , ( "text-align", "center" )
-        , ( "text-decoration", "none" )
-        , ( "display", "inline-block" )
-        , ( "font-size", "16px" )
-        ]
+
+{-
+   buttonStyle : Html.Attribute Msg
+   buttonStyle =
+       style
+           [ ( "background-color", "#041d25" )
+           , ( "border", "none" )
+           , ( "color", "white" )
+           , ( "padding", "15px 32px" )
+           , ( "text-align", "center" )
+           , ( "text-decoration", "none" )
+           , ( "display", "inline-block" )
+           , ( "font-size", "16px" )
+           ]
+
+-}
 
 
 startButton : Html Msg
 startButton =
     Html.div []
-        [ Html.button [ buttonStyle, onClick Start ] [ Html.text "Start" ] ]
+        [ Html.text "Click Anywhere to Start" ]
 
 
 treadmill : Model -> Html Msg
@@ -325,13 +332,16 @@ itemStyles items =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Animation.subscription Animate
-            (itemStyles model.treadmill)
-        , Time.every Time.second Tick
-        , Time.every (Time.second * 5) NewWord
-        , Window.resizes Resize
-        ]
+    if model.splashScreen then
+        Window.resizes Resize
+    else
+        Sub.batch
+            [ Animation.subscription Animate
+                (itemStyles model.treadmill)
+            , Time.every Time.second Tick
+            , Time.every (Time.second * 5) NewWord
+            , Window.resizes Resize
+            ]
 
 
 
