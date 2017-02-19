@@ -20,11 +20,9 @@ import Zipper as Zipper exposing (..)
 
 {-
    TODO:
-   - Add levels
    - Add more words/Imgs
    - get secondary images to appear
    - make image unselectable: http://stackoverflow.com/a/12906840
-   - Delete item when clicked
 -}
 -- MODEL
 
