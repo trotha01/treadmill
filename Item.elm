@@ -56,7 +56,7 @@ initItem word imgFocus imgSrcs =
 initImg : String -> Img msg
 initImg imgSrc =
     { src = imgSrc
-    , style = Animation.style []
+    , style = Animation.style [ Animation.display Animation.none ]
     }
 
 
@@ -81,6 +81,7 @@ startImgAnimation doneMsg start end img =
             Animation.interrupt
                 [ Animation.set
                     [ Animation.left (px <| toFloat start)
+                    , Animation.display Animation.block
                     ]
                 , Animation.toWith (Animation.easing { duration = Time.second * 4, ease = Ease.linear })
                     [ Animation.left (px <| toFloat end)
