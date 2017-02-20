@@ -1,58 +1,64 @@
 module Main exposing (..)
 
-import Animation exposing (px)
-import Animation.Messenger
-import Ease
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Item
 import Random exposing (Generator)
-import Svg exposing (Svg, svg)
-import Svg.Attributes exposing (fill, x, y, rx, ry)
 import Task
 import Time
-import Tuple
 import TouchEvents as Touch exposing (..)
+import Treadmill
+import Tuple
 import Window
 import Zipper as Zipper exposing (..)
 
 
 {-
    TODO:
-   - Add levels
    - Add more words/Imgs
    - get secondary images to appear
    - make image unselectable: http://stackoverflow.com/a/12906840
-   - Delete item when clicked
+-}
+{-
+   sound from: http://www.pacdv.com/sounds/interface_sounds-2.html
 -}
 -- MODEL
 
 
 type alias Model =
     { items : Zipper (Item.Model Msg)
-    , treadmill : List ( Int, Item.Model Msg )
-    , lastID : Int
+    , treadmill : Treadmill.Belt Msg
     , seed : Random.Seed
     , windowSize : Window.Size
     , points : Int
     , notice : String
     , level : Int
-    , splashScreen : Bool
+    , game : Game
     }
+
+
+type Game
+    = SplashScreen
+    | ClassicTreadmill
+    | MakeACake Status
+
+
+type Status
+    = Starting
+    | Running
 
 
 init : ( Model, Cmd Msg )
 init =
     ( { items = Item.initItems
-      , treadmill = []
-      , lastID = 0
+      , treadmill = Treadmill.init
       , seed = Random.initialSeed 0
       , windowSize = { width = 500, height = 500 }
       , points = 0
       , notice = ""
       , level = 1
-      , splashScreen = True
+      , game = SplashScreen
       }
     , Task.perform Resize (Window.size)
     )
@@ -63,7 +69,7 @@ init =
 
 
 type Msg
-    = Animate Animation.Msg
+    = TreadmillMsg Treadmill.Msg
     | Start
     | Done Int (Item.Img Msg)
     | Resize Window.Size
@@ -75,108 +81,128 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    if model.splashScreen then
-        case msg of
-            Start ->
-                ( { model | splashScreen = False }, Cmd.none )
+    case msg of
+        Resize newSize ->
+            ( { model | windowSize = newSize }, Cmd.none )
 
-            Resize newSize ->
-                ( { model | windowSize = newSize }, Cmd.none )
+        _ ->
+            case model.game of
+                SplashScreen ->
+                    updateSplashScreen msg model
 
-            Animate animMsg ->
-                let
-                    idsItemsCmds =
-                        List.map (\( id, i ) -> ( id, Item.updateItemAnimation animMsg i )) model.treadmill
+                MakeACake Starting ->
+                    startMakeACake msg model
 
-                    ( ids, itemCmds ) =
-                        List.unzip idsItemsCmds
+                MakeACake Running ->
+                    updateMakeACake msg model
 
-                    ( items, cmds ) =
-                        List.unzip itemCmds
+                ClassicTreadmill ->
+                    updateClassicGame msg model
 
-                    newItems =
-                        zip ids items
-                in
-                    ( { model | treadmill = newItems }, Cmd.batch cmds )
 
-            _ ->
-                ( model, Cmd.none )
-    else
-        case msg of
-            Start ->
-                ( model, Cmd.none )
+updateSplashScreen : Msg -> Model -> ( Model, Cmd Msg )
+updateSplashScreen msg model =
+    case msg of
+        Start ->
+            ( { model | game = ClassicTreadmill }, Cmd.none )
 
-            NewWord _ ->
-                ( nextWord model, Cmd.none )
+        TreadmillMsg msg ->
+            let
+                ( newTreadmill, cmd ) =
+                    Treadmill.update msg model.treadmill
+            in
+                ( { model | treadmill = newTreadmill }, cmd )
 
-            Tick _ ->
-                ( addItem model, Cmd.none )
+        _ ->
+            ( model, Cmd.none )
 
-            ItemTouched id clickedItem _ ->
-                update (ItemClicked id clickedItem) model
 
-            ItemClicked id clickedItem ->
-                let
-                    currentItem =
-                        Zipper.current model.items
+startMakeACake : Msg -> Model -> ( Model, Cmd Msg )
+startMakeACake msg model =
+    ( addBowl model, Cmd.none )
 
-                    ( correct, notice, points ) =
-                        if clickedItem.word == currentItem.word then
-                            ( True, "Yes!", model.points + 10 )
-                        else
-                            ( False, "Try Again!", model.points )
 
-                    ( splashScreen, level ) =
-                        if correct && points /= 0 && (points % 50 == 0) then
-                            -- Level Up
-                            ( True, model.level + 1 )
-                        else
-                            ( False, model.level )
+updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
+updateMakeACake msg model =
+    case msg of
+        TreadmillMsg msg ->
+            let
+                ( newTreadmill, cmd ) =
+                    Treadmill.update msg model.treadmill
+            in
+                ( { model | treadmill = newTreadmill }, cmd )
 
-                    _ =
-                        Debug.log "clicked" id
+        Resize newSize ->
+            ( { model | windowSize = newSize }, Cmd.none )
 
-                    treadmill =
-                        if correct then
-                            List.filter (\( itemId, _ ) -> itemId /= id) model.treadmill
-                        else
-                            model.treadmill
-                in
-                    ( { model
-                        | notice = notice
-                        , points = points
-                        , splashScreen = splashScreen
-                        , level = level
-                        , treadmill = treadmill
-                      }
-                    , Cmd.none
-                    )
+        Done id img ->
+            ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
 
-            Resize newSize ->
-                ( { model | windowSize = Debug.log "new size" newSize }, Cmd.none )
+        _ ->
+            ( model, Cmd.none )
 
-            Animate animMsg ->
-                let
-                    idsItemsCmds =
-                        List.map (\( id, i ) -> ( id, Item.updateItemAnimation animMsg i )) model.treadmill
 
-                    ( ids, itemCmds ) =
-                        List.unzip idsItemsCmds
+updateClassicGame : Msg -> Model -> ( Model, Cmd Msg )
+updateClassicGame msg model =
+    case msg of
+        Start ->
+            ( model, Cmd.none )
 
-                    ( items, cmds ) =
-                        List.unzip itemCmds
+        NewWord _ ->
+            ( nextWord model, Cmd.none )
 
-                    newItems =
-                        zip ids items
-                in
-                    ( { model | treadmill = newItems }, Cmd.batch cmds )
+        Tick _ ->
+            ( addItem model, Cmd.none )
 
-            Done id img ->
-                let
-                    newTreadmill =
-                        List.filter (\( itemId, _ ) -> itemId /= id) model.treadmill
-                in
-                    ( { model | treadmill = newTreadmill }, Cmd.none )
+        ItemTouched id clickedItem _ ->
+            updateClassicGame (ItemClicked id clickedItem) model
+
+        ItemClicked id clickedItem ->
+            let
+                currentItem =
+                    Zipper.current model.items
+
+                ( correct, notice, points ) =
+                    if clickedItem.word == currentItem.word then
+                        ( True, "Yes!", model.points + 10 )
+                    else
+                        ( False, "Try Again!", model.points )
+
+                ( game, level ) =
+                    if correct && points /= 0 && (points % 50 == 0) then
+                        -- Level Up
+                        ( SplashScreen, model.level + 1 )
+                    else
+                        ( ClassicTreadmill, model.level )
+
+                treadmill =
+                    if correct then
+                        Treadmill.removeItem id model.treadmill
+                    else
+                        model.treadmill
+            in
+                ( { model
+                    | notice = notice
+                    , points = points
+                    , game = game
+                    , level = level
+                    , treadmill = treadmill
+                  }
+                , Cmd.none
+                )
+
+        TreadmillMsg msg ->
+            let
+                ( newTreadmill, cmd ) =
+                    Treadmill.update msg model.treadmill
+            in
+                ( { model | treadmill = newTreadmill }, cmd )
+
+        Done id img ->
+            ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 nextWord : Model -> Model
@@ -188,24 +214,26 @@ nextWord model =
     }
 
 
+addBowl : Model -> Model
+addBowl model =
+    { model | game = MakeACake Running, treadmill = Treadmill.addItem model.windowSize.width Done model.treadmill Item.bowl }
+
+
 addItem : Model -> Model
 addItem model =
     let
         ( newItem, newSeed ) =
             Random.step (Item.randItem model.items) model.seed
 
-        newAnimatedItem =
-            Maybe.map (Item.startItemAnimation (Done model.lastID) model.windowSize.width -100) newItem
-
-        newID =
-            model.lastID + 1
+        newBelt =
+            Maybe.map (Treadmill.addItem model.windowSize.width Done model.treadmill) newItem
     in
-        case newAnimatedItem of
+        case newBelt of
             Nothing ->
                 { model | seed = newSeed }
 
-            Just animatedItem ->
-                { model | seed = newSeed, lastID = newID, treadmill = ( model.lastID, animatedItem ) :: model.treadmill }
+            Just belt ->
+                { model | seed = newSeed, treadmill = belt }
 
 
 
@@ -214,18 +242,29 @@ addItem model =
 
 view : Model -> Html Msg
 view model =
-    if model.splashScreen then
-        splashScreenView model
-    else
-        Html.div
-            []
-            [ Html.span
-                [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
-                [ pointsView model ]
-            , word model
-            , notice model
-            , treadmill model
-            ]
+    case model.game of
+        SplashScreen ->
+            splashScreenView model
+
+        MakeACake _ ->
+            Html.div
+                []
+                [ Html.span
+                    [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
+                    [ pointsView model ]
+                , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
+                ]
+
+        ClassicTreadmill ->
+            Html.div
+                []
+                [ Html.span
+                    [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
+                    [ pointsView model ]
+                , word model
+                , notice model
+                , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
+                ]
 
 
 splashScreenView : Model -> Html Msg
@@ -294,69 +333,29 @@ startButton =
         [ Html.button [ buttonStyle, onClick Start ] [ Html.text "Start" ] ]
 
 
-treadmill : Model -> Html Msg
-treadmill model =
-    let
-        items =
-            (model.treadmill
-                |> List.map (\( id, item ) -> Item.viewItem (ItemClicked id) (ItemTouched id) item)
-            )
-
-        belt =
-            svg
-                [ style
-                    [ ( "position", "absolute" )
-                    , ( "top", "100px" )
-                    , ( "width", (toString model.windowSize.width) ++ "px" )
-                    , ( "left", "0px" )
-                    ]
-                ]
-                [ Svg.rect [ fill "black", x "0", y "0", rx "3", ry "3", Svg.Attributes.width "100%", Svg.Attributes.height "4" ] [] ]
-    in
-        Html.div
-            [ style
-                [ ( "position", "absolute" )
-                , ( "overflow", "hidden" )
-                , ( "top", "300px" )
-                , ( "height", "110px" )
-                , ( "width", (toString model.windowSize.width) ++ "px" )
-                ]
-            ]
-            (belt :: items)
-
-
 
 -- SUBSCRIPTIONS
 
 
-{-| TODO: move these to Item module?
--}
-imgStyles : Zipper (Item.Img Msg) -> List (Animation.Messenger.State Msg)
-imgStyles imgs =
-    imgs
-        |> Zipper.map .style
-        |> Zipper.toList
-
-
-itemStyles : List ( Int, Item.Model Msg ) -> List (Animation.Messenger.State Msg)
-itemStyles items =
-    items
-        |> List.map (Tuple.second >> .imgs >> imgStyles)
-        |> List.concat
-
-
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.splashScreen then
-        Window.resizes Resize
-    else
-        Sub.batch
-            [ Animation.subscription Animate
-                (itemStyles model.treadmill)
-            , Time.every Time.second Tick
-            , Time.every (Time.second * 5) NewWord
-            , Window.resizes Resize
-            ]
+    case model.game of
+        SplashScreen ->
+            Window.resizes Resize
+
+        MakeACake _ ->
+            Sub.batch
+                [ Treadmill.subscription TreadmillMsg model.treadmill
+                , Window.resizes Resize
+                ]
+
+        _ ->
+            Sub.batch
+                [ Treadmill.subscription TreadmillMsg model.treadmill
+                , Time.every Time.second Tick
+                , Time.every (Time.second * 5) NewWord
+                , Window.resizes Resize
+                ]
 
 
 
@@ -371,22 +370,3 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
-
-
-
--- HELPERS
-
-
-zip : List a -> List b -> List ( a, b )
-zip xs ys =
-    zip_ xs ys []
-
-
-zip_ : List a -> List b -> List ( a, b ) -> List ( a, b )
-zip_ xs ys xys =
-    case ( xs, ys ) of
-        ( x :: xs, y :: ys ) ->
-            zip_ xs ys (xys ++ [ ( x, y ) ])
-
-        ( xs, ys ) ->
-            xys
