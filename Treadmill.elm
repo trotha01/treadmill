@@ -32,6 +32,17 @@ init =
 -- UPDATE
 
 
+type Msg
+    = Animate Animation.Msg
+
+
+update : Msg -> Belt msg -> ( Belt msg, Cmd msg )
+update msg belt =
+    case msg of
+        Animate animMsg ->
+            animate animMsg belt
+
+
 addItem : Int -> (Int -> Item.Img msg -> msg) -> Belt msg -> Item.Model msg -> Belt msg
 addItem windowWidth done belt item =
     let
@@ -130,9 +141,9 @@ itemStyles items =
         |> List.concat
 
 
-subscription : (Animation.Msg -> msg) -> Belt msg -> Sub msg
+subscription : (Msg -> msg) -> Belt msg -> Sub msg
 subscription msg belt =
-    Animation.subscription msg
+    Animation.subscription (Animate >> msg)
         (itemStyles belt.items)
 
 

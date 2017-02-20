@@ -1,15 +1,10 @@
 module Main exposing (..)
 
-import Animation exposing (px)
-import Animation.Messenger
-import Ease
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Item
 import Random exposing (Generator)
-import Svg exposing (Svg, svg)
-import Svg.Attributes exposing (fill, x, y, rx, ry)
 import Task
 import Time
 import TouchEvents as Touch exposing (..)
@@ -74,7 +69,7 @@ init =
 
 
 type Msg
-    = Animate Animation.Msg
+    = TreadmillMsg Treadmill.Msg
     | Start
     | Done Int (Item.Img Msg)
     | Resize Window.Size
@@ -95,10 +90,10 @@ update msg model =
                 Resize newSize ->
                     ( { model | windowSize = newSize }, Cmd.none )
 
-                Animate animMsg ->
+                TreadmillMsg msg ->
                     let
                         ( newTreadmill, cmd ) =
-                            Treadmill.animate animMsg model.treadmill
+                            Treadmill.update msg model.treadmill
                     in
                         ( { model | treadmill = newTreadmill }, cmd )
 
@@ -112,10 +107,10 @@ update msg model =
 
                 Running ->
                     case msg of
-                        Animate animMsg ->
+                        TreadmillMsg msg ->
                             let
                                 ( newTreadmill, cmd ) =
-                                    Treadmill.animate animMsg model.treadmill
+                                    Treadmill.update msg model.treadmill
                             in
                                 ( { model | treadmill = newTreadmill }, cmd )
 
@@ -176,10 +171,10 @@ update msg model =
                 Resize newSize ->
                     ( { model | windowSize = newSize }, Cmd.none )
 
-                Animate animMsg ->
+                TreadmillMsg msg ->
                     let
                         ( newTreadmill, cmd ) =
-                            Treadmill.animate animMsg model.treadmill
+                            Treadmill.update msg model.treadmill
                     in
                         ( { model | treadmill = newTreadmill }, cmd )
 
@@ -327,13 +322,13 @@ subscriptions model =
 
         MakeACake _ ->
             Sub.batch
-                [ Treadmill.subscription Animate model.treadmill
+                [ Treadmill.subscription TreadmillMsg model.treadmill
                 , Window.resizes Resize
                 ]
 
         _ ->
             Sub.batch
-                [ Treadmill.subscription Animate model.treadmill
+                [ Treadmill.subscription TreadmillMsg model.treadmill
                 , Time.every Time.second Tick
                 , Time.every (Time.second * 5) NewWord
                 , Window.resizes Resize
