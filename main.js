@@ -15720,6 +15720,11 @@ var _user$project$Item$initItem = F3(
 		var initedImgs = A2(_user$project$Zipper$map, _user$project$Item$initImg, imgs);
 		return {word: word, imgs: initedImgs};
 	});
+var _user$project$Item$bowl = A3(
+	_user$project$Item$initItem,
+	'bowl',
+	'imgs/cake-bowl.png',
+	{ctor: '[]'});
 var _user$project$Item$initItems = A2(
 	_user$project$Zipper$fromListWithFocus,
 	A3(
@@ -15769,7 +15774,7 @@ var _user$project$Item$Img = F2(
 		return {src: a, style: b};
 	});
 
-var _user$project$Main$zip_ = F3(
+var _user$project$Treadmill$zip_ = F3(
 	function (xs, ys, xys) {
 		zip_:
 		while (true) {
@@ -15794,15 +15799,15 @@ var _user$project$Main$zip_ = F3(
 			}
 		}
 	});
-var _user$project$Main$zip = F2(
+var _user$project$Treadmill$zip = F2(
 	function (xs, ys) {
 		return A3(
-			_user$project$Main$zip_,
+			_user$project$Treadmill$zip_,
 			xs,
 			ys,
 			{ctor: '[]'});
 	});
-var _user$project$Main$imgStyles = function (imgs) {
+var _user$project$Treadmill$imgStyles = function (imgs) {
 	return _user$project$Zipper$toList(
 		A2(
 			_user$project$Zipper$map,
@@ -15811,12 +15816,12 @@ var _user$project$Main$imgStyles = function (imgs) {
 			},
 			imgs));
 };
-var _user$project$Main$itemStyles = function (items) {
+var _user$project$Treadmill$itemStyles = function (items) {
 	return _elm_lang$core$List$concat(
 		A2(
 			_elm_lang$core$List$map,
 			function (_p1) {
-				return _user$project$Main$imgStyles(
+				return _user$project$Treadmill$imgStyles(
 					function (_) {
 						return _.imgs;
 					}(
@@ -15824,6 +15829,213 @@ var _user$project$Main$itemStyles = function (items) {
 			},
 			items));
 };
+var _user$project$Treadmill$view = F4(
+	function (windowWidth, clickMsg, touchMsg, belt) {
+		var viewBelt = A2(
+			_elm_lang$svg$Svg$svg,
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$style(
+					{
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'position', _1: 'absolute'},
+						_1: {
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'top', _1: '100px'},
+							_1: {
+								ctor: '::',
+								_0: {
+									ctor: '_Tuple2',
+									_0: 'width',
+									_1: A2(
+										_elm_lang$core$Basics_ops['++'],
+										_elm_lang$core$Basics$toString(windowWidth),
+										'px')
+								},
+								_1: {
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'left', _1: '0px'},
+									_1: {ctor: '[]'}
+								}
+							}
+						}
+					}),
+				_1: {ctor: '[]'}
+			},
+			{
+				ctor: '::',
+				_0: A2(
+					_elm_lang$svg$Svg$rect,
+					{
+						ctor: '::',
+						_0: _elm_lang$svg$Svg_Attributes$fill('black'),
+						_1: {
+							ctor: '::',
+							_0: _elm_lang$svg$Svg_Attributes$x('0'),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$svg$Svg_Attributes$y('0'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$svg$Svg_Attributes$rx('3'),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$svg$Svg_Attributes$ry('3'),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$svg$Svg_Attributes$width('100%'),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$svg$Svg_Attributes$height('4'),
+												_1: {ctor: '[]'}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					{ctor: '[]'}),
+				_1: {ctor: '[]'}
+			});
+		var items = A2(
+			_elm_lang$core$List$map,
+			function (_p2) {
+				var _p3 = _p2;
+				var _p4 = _p3._0;
+				return A3(
+					_user$project$Item$viewItem,
+					clickMsg(_p4),
+					touchMsg(_p4),
+					_p3._1);
+			},
+			belt.items);
+		return A2(
+			_elm_lang$html$Html$div,
+			{
+				ctor: '::',
+				_0: _elm_lang$html$Html_Attributes$style(
+					{
+						ctor: '::',
+						_0: {ctor: '_Tuple2', _0: 'position', _1: 'absolute'},
+						_1: {
+							ctor: '::',
+							_0: {ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
+							_1: {
+								ctor: '::',
+								_0: {ctor: '_Tuple2', _0: 'top', _1: '300px'},
+								_1: {
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'height', _1: '110px'},
+									_1: {
+										ctor: '::',
+										_0: {
+											ctor: '_Tuple2',
+											_0: 'width',
+											_1: A2(
+												_elm_lang$core$Basics_ops['++'],
+												_elm_lang$core$Basics$toString(windowWidth),
+												'px')
+										},
+										_1: {ctor: '[]'}
+									}
+								}
+							}
+						}
+					}),
+				_1: {ctor: '[]'}
+			},
+			{ctor: '::', _0: viewBelt, _1: items});
+	});
+var _user$project$Treadmill$animate = F2(
+	function (msg, belt) {
+		var idsItemsCmds = A2(
+			_elm_lang$core$List$map,
+			function (_p5) {
+				var _p6 = _p5;
+				return {
+					ctor: '_Tuple2',
+					_0: _p6._0,
+					_1: A2(_user$project$Item$updateItemAnimation, msg, _p6._1)
+				};
+			},
+			belt.items);
+		var _p7 = _elm_lang$core$List$unzip(idsItemsCmds);
+		var ids = _p7._0;
+		var itemCmds = _p7._1;
+		var _p8 = _elm_lang$core$List$unzip(itemCmds);
+		var items = _p8._0;
+		var cmds = _p8._1;
+		var newItems = A2(_user$project$Treadmill$zip, ids, items);
+		return {
+			ctor: '_Tuple2',
+			_0: _elm_lang$core$Native_Utils.update(
+				belt,
+				{items: newItems}),
+			_1: _elm_lang$core$Platform_Cmd$batch(cmds)
+		};
+	});
+var _user$project$Treadmill$removeItem = F2(
+	function (id, belt) {
+		return _elm_lang$core$Native_Utils.update(
+			belt,
+			{
+				items: A2(
+					_elm_lang$core$List$filter,
+					function (_p9) {
+						var _p10 = _p9;
+						return !_elm_lang$core$Native_Utils.eq(_p10._0, id);
+					},
+					belt.items)
+			});
+	});
+var _user$project$Treadmill$addItem = F4(
+	function (windowWidth, done, belt, item) {
+		var newID = belt.length;
+		var animatedItem = A4(
+			_user$project$Item$startItemAnimation,
+			done(newID),
+			windowWidth,
+			-100,
+			item);
+		return _elm_lang$core$Native_Utils.update(
+			belt,
+			{
+				items: {
+					ctor: '::',
+					_0: {ctor: '_Tuple2', _0: newID, _1: animatedItem},
+					_1: belt.items
+				},
+				length: belt.length + 1
+			});
+	});
+var _user$project$Treadmill$update = F2(
+	function (msg, belt) {
+		var _p11 = msg;
+		return A2(_user$project$Treadmill$animate, _p11._0, belt);
+	});
+var _user$project$Treadmill$init = {
+	length: 0,
+	items: {ctor: '[]'}
+};
+var _user$project$Treadmill$Belt = F2(
+	function (a, b) {
+		return {length: a, items: b};
+	});
+var _user$project$Treadmill$Animate = function (a) {
+	return {ctor: 'Animate', _0: a};
+};
+var _user$project$Treadmill$subscription = F2(
+	function (msg, belt) {
+		return A2(
+			_mdgriffith$elm_style_animation$Animation$subscription,
+			function (_p12) {
+				return msg(
+					_user$project$Treadmill$Animate(_p12));
+			},
+			_user$project$Treadmill$itemStyles(belt.items));
+	});
+
 var _user$project$Main$buttonStyle = _elm_lang$html$Html_Attributes$style(
 	{
 		ctor: '::',
@@ -15924,10 +16136,81 @@ var _user$project$Main$nextWord = function (model) {
 				_user$project$Zipper$next(model.items))
 		});
 };
-var _user$project$Main$Model = F9(
-	function (a, b, c, d, e, f, g, h, i) {
-		return {items: a, treadmill: b, lastID: c, seed: d, windowSize: e, points: f, notice: g, level: h, splashScreen: i};
+var _user$project$Main$updateMakeACake = F2(
+	function (msg, model) {
+		var _p0 = msg;
+		switch (_p0.ctor) {
+			case 'TreadmillMsg':
+				var _p1 = A2(_user$project$Treadmill$update, _p0._0, model.treadmill);
+				var newTreadmill = _p1._0;
+				var cmd = _p1._1;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{treadmill: newTreadmill}),
+					_1: cmd
+				};
+			case 'Resize':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{windowSize: _p0._0}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'Done':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							treadmill: A2(_user$project$Treadmill$removeItem, _p0._0, model.treadmill)
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			default:
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		}
 	});
+var _user$project$Main$Model = F8(
+	function (a, b, c, d, e, f, g, h) {
+		return {items: a, treadmill: b, seed: c, windowSize: d, points: e, notice: f, level: g, game: h};
+	});
+var _user$project$Main$MakeACake = function (a) {
+	return {ctor: 'MakeACake', _0: a};
+};
+var _user$project$Main$ClassicTreadmill = {ctor: 'ClassicTreadmill'};
+var _user$project$Main$updateSplashScreen = F2(
+	function (msg, model) {
+		var _p2 = msg;
+		switch (_p2.ctor) {
+			case 'Start':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{game: _user$project$Main$ClassicTreadmill}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'TreadmillMsg':
+				var _p3 = A2(_user$project$Treadmill$update, _p2._0, model.treadmill);
+				var newTreadmill = _p3._0;
+				var cmd = _p3._1;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{treadmill: newTreadmill}),
+					_1: cmd
+				};
+			default:
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		}
+	});
+var _user$project$Main$SplashScreen = {ctor: 'SplashScreen'};
+var _user$project$Main$Running = {ctor: 'Running'};
+var _user$project$Main$Starting = {ctor: 'Starting'};
 var _user$project$Main$ItemTouched = F3(
 	function (a, b, c) {
 		return {ctor: 'ItemTouched', _0: a, _1: b, _2: c};
@@ -15936,123 +16219,6 @@ var _user$project$Main$ItemClicked = F2(
 	function (a, b) {
 		return {ctor: 'ItemClicked', _0: a, _1: b};
 	});
-var _user$project$Main$treadmill = function (model) {
-	var belt = A2(
-		_elm_lang$svg$Svg$svg,
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$style(
-				{
-					ctor: '::',
-					_0: {ctor: '_Tuple2', _0: 'position', _1: 'absolute'},
-					_1: {
-						ctor: '::',
-						_0: {ctor: '_Tuple2', _0: 'top', _1: '100px'},
-						_1: {
-							ctor: '::',
-							_0: {
-								ctor: '_Tuple2',
-								_0: 'width',
-								_1: A2(
-									_elm_lang$core$Basics_ops['++'],
-									_elm_lang$core$Basics$toString(model.windowSize.width),
-									'px')
-							},
-							_1: {
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'left', _1: '0px'},
-								_1: {ctor: '[]'}
-							}
-						}
-					}
-				}),
-			_1: {ctor: '[]'}
-		},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$svg$Svg$rect,
-				{
-					ctor: '::',
-					_0: _elm_lang$svg$Svg_Attributes$fill('black'),
-					_1: {
-						ctor: '::',
-						_0: _elm_lang$svg$Svg_Attributes$x('0'),
-						_1: {
-							ctor: '::',
-							_0: _elm_lang$svg$Svg_Attributes$y('0'),
-							_1: {
-								ctor: '::',
-								_0: _elm_lang$svg$Svg_Attributes$rx('3'),
-								_1: {
-									ctor: '::',
-									_0: _elm_lang$svg$Svg_Attributes$ry('3'),
-									_1: {
-										ctor: '::',
-										_0: _elm_lang$svg$Svg_Attributes$width('100%'),
-										_1: {
-											ctor: '::',
-											_0: _elm_lang$svg$Svg_Attributes$height('4'),
-											_1: {ctor: '[]'}
-										}
-									}
-								}
-							}
-						}
-					}
-				},
-				{ctor: '[]'}),
-			_1: {ctor: '[]'}
-		});
-	var items = A2(
-		_elm_lang$core$List$map,
-		function (_p2) {
-			var _p3 = _p2;
-			var _p4 = _p3._0;
-			return A3(
-				_user$project$Item$viewItem,
-				_user$project$Main$ItemClicked(_p4),
-				_user$project$Main$ItemTouched(_p4),
-				_p3._1);
-		},
-		model.treadmill);
-	return A2(
-		_elm_lang$html$Html$div,
-		{
-			ctor: '::',
-			_0: _elm_lang$html$Html_Attributes$style(
-				{
-					ctor: '::',
-					_0: {ctor: '_Tuple2', _0: 'position', _1: 'absolute'},
-					_1: {
-						ctor: '::',
-						_0: {ctor: '_Tuple2', _0: 'overflow', _1: 'hidden'},
-						_1: {
-							ctor: '::',
-							_0: {ctor: '_Tuple2', _0: 'top', _1: '300px'},
-							_1: {
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'height', _1: '110px'},
-								_1: {
-									ctor: '::',
-									_0: {
-										ctor: '_Tuple2',
-										_0: 'width',
-										_1: A2(
-											_elm_lang$core$Basics_ops['++'],
-											_elm_lang$core$Basics$toString(model.windowSize.width),
-											'px')
-									},
-									_1: {ctor: '[]'}
-								}
-							}
-						}
-					}
-				}),
-			_1: {ctor: '[]'}
-		},
-		{ctor: '::', _0: belt, _1: items});
-};
 var _user$project$Main$NewWord = function (a) {
 	return {ctor: 'NewWord', _0: a};
 };
@@ -16066,14 +16232,13 @@ var _user$project$Main$init = {
 	ctor: '_Tuple2',
 	_0: {
 		items: _user$project$Item$initItems,
-		treadmill: {ctor: '[]'},
-		lastID: 0,
+		treadmill: _user$project$Treadmill$init,
 		seed: _elm_lang$core$Random$initialSeed(0),
 		windowSize: {width: 500, height: 500},
 		points: 0,
 		notice: '',
 		level: 1,
-		splashScreen: true
+		game: _user$project$Main$SplashScreen
 	},
 	_1: A2(_elm_lang$core$Task$perform, _user$project$Main$Resize, _elm_lang$window$Window$size)
 };
@@ -16081,195 +16246,135 @@ var _user$project$Main$Done = F2(
 	function (a, b) {
 		return {ctor: 'Done', _0: a, _1: b};
 	});
+var _user$project$Main$addBowl = function (model) {
+	return _elm_lang$core$Native_Utils.update(
+		model,
+		{
+			game: _user$project$Main$MakeACake(_user$project$Main$Running),
+			treadmill: A4(_user$project$Treadmill$addItem, model.windowSize.width, _user$project$Main$Done, model.treadmill, _user$project$Item$bowl)
+		});
+};
+var _user$project$Main$startMakeACake = F2(
+	function (msg, model) {
+		return {
+			ctor: '_Tuple2',
+			_0: _user$project$Main$addBowl(model),
+			_1: _elm_lang$core$Platform_Cmd$none
+		};
+	});
 var _user$project$Main$addItem = function (model) {
-	var newID = model.lastID + 1;
-	var _p5 = A2(
+	var _p4 = A2(
 		_elm_lang$core$Random$step,
 		_user$project$Item$randItem(model.items),
 		model.seed);
-	var newItem = _p5._0;
-	var newSeed = _p5._1;
-	var newAnimatedItem = A2(
+	var newItem = _p4._0;
+	var newSeed = _p4._1;
+	var newBelt = A2(
 		_elm_lang$core$Maybe$map,
-		A3(
-			_user$project$Item$startItemAnimation,
-			_user$project$Main$Done(model.lastID),
-			model.windowSize.width,
-			-100),
+		A3(_user$project$Treadmill$addItem, model.windowSize.width, _user$project$Main$Done, model.treadmill),
 		newItem);
-	var _p6 = newAnimatedItem;
-	if (_p6.ctor === 'Nothing') {
+	var _p5 = newBelt;
+	if (_p5.ctor === 'Nothing') {
 		return _elm_lang$core$Native_Utils.update(
 			model,
 			{seed: newSeed});
 	} else {
 		return _elm_lang$core$Native_Utils.update(
 			model,
-			{
-				seed: newSeed,
-				lastID: newID,
-				treadmill: {
-					ctor: '::',
-					_0: {ctor: '_Tuple2', _0: model.lastID, _1: _p6._0},
-					_1: model.treadmill
-				}
-			});
+			{seed: newSeed, treadmill: _p5._0});
 	}
 };
+var _user$project$Main$updateClassicGame = F2(
+	function (msg, model) {
+		var _p6 = msg;
+		switch (_p6.ctor) {
+			case 'Start':
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			case 'NewWord':
+				return {
+					ctor: '_Tuple2',
+					_0: _user$project$Main$nextWord(model),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'Tick':
+				return {
+					ctor: '_Tuple2',
+					_0: _user$project$Main$addItem(model),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'ItemTouched':
+				return A2(
+					_user$project$Main$update,
+					A2(_user$project$Main$ItemClicked, _p6._0, _p6._1),
+					model);
+			case 'ItemClicked':
+				var treadmill = A2(_user$project$Treadmill$removeItem, _p6._0, model.treadmill);
+				var currentItem = _user$project$Zipper$current(model.items);
+				var _p7 = _elm_lang$core$Native_Utils.eq(_p6._1.word, currentItem.word) ? {ctor: '_Tuple3', _0: true, _1: 'Yes!', _2: model.points + 10} : {ctor: '_Tuple3', _0: false, _1: 'Try Again!', _2: model.points};
+				var correct = _p7._0;
+				var notice = _p7._1;
+				var points = _p7._2;
+				var _p8 = (correct && ((!_elm_lang$core$Native_Utils.eq(points, 0)) && _elm_lang$core$Native_Utils.eq(
+					A2(_elm_lang$core$Basics_ops['%'], points, 50),
+					0))) ? {ctor: '_Tuple2', _0: _user$project$Main$SplashScreen, _1: model.level + 1} : {ctor: '_Tuple2', _0: _user$project$Main$ClassicTreadmill, _1: model.level};
+				var game = _p8._0;
+				var level = _p8._1;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{notice: notice, points: points, game: game, level: level, treadmill: treadmill}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'TreadmillMsg':
+				var _p9 = A2(_user$project$Treadmill$update, _p6._0, model.treadmill);
+				var newTreadmill = _p9._0;
+				var cmd = _p9._1;
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{treadmill: newTreadmill}),
+					_1: cmd
+				};
+			case 'Done':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							treadmill: A2(_user$project$Treadmill$removeItem, _p6._0, model.treadmill)
+						}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			default:
+				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		}
+	});
 var _user$project$Main$update = F2(
 	function (msg, model) {
-		update:
-		while (true) {
-			if (model.splashScreen) {
-				var _p7 = msg;
-				switch (_p7.ctor) {
-					case 'Start':
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{splashScreen: false}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					case 'Resize':
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{windowSize: _p7._0}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					case 'Animate':
-						var idsItemsCmds = A2(
-							_elm_lang$core$List$map,
-							function (_p8) {
-								var _p9 = _p8;
-								return {
-									ctor: '_Tuple2',
-									_0: _p9._0,
-									_1: A2(_user$project$Item$updateItemAnimation, _p7._0, _p9._1)
-								};
-							},
-							model.treadmill);
-						var _p10 = _elm_lang$core$List$unzip(idsItemsCmds);
-						var ids = _p10._0;
-						var itemCmds = _p10._1;
-						var _p11 = _elm_lang$core$List$unzip(itemCmds);
-						var items = _p11._0;
-						var cmds = _p11._1;
-						var newItems = A2(_user$project$Main$zip, ids, items);
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{treadmill: newItems}),
-							_1: _elm_lang$core$Platform_Cmd$batch(cmds)
-						};
-					default:
-						return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-				}
-			} else {
-				var _p12 = msg;
-				switch (_p12.ctor) {
-					case 'Start':
-						return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-					case 'NewWord':
-						return {
-							ctor: '_Tuple2',
-							_0: _user$project$Main$nextWord(model),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					case 'Tick':
-						return {
-							ctor: '_Tuple2',
-							_0: _user$project$Main$addItem(model),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					case 'ItemTouched':
-						var _v9 = A2(_user$project$Main$ItemClicked, _p12._0, _p12._1),
-							_v10 = model;
-						msg = _v9;
-						model = _v10;
-						continue update;
-					case 'ItemClicked':
-						var _p18 = _p12._0;
-						var _p13 = A2(_elm_lang$core$Debug$log, 'clicked', _p18);
-						var currentItem = _user$project$Zipper$current(model.items);
-						var _p14 = _elm_lang$core$Native_Utils.eq(_p12._1.word, currentItem.word) ? {ctor: '_Tuple3', _0: true, _1: 'Yes!', _2: model.points + 10} : {ctor: '_Tuple3', _0: false, _1: 'Try Again!', _2: model.points};
-						var correct = _p14._0;
-						var notice = _p14._1;
-						var points = _p14._2;
-						var _p15 = (correct && ((!_elm_lang$core$Native_Utils.eq(points, 0)) && _elm_lang$core$Native_Utils.eq(
-							A2(_elm_lang$core$Basics_ops['%'], points, 50),
-							0))) ? {ctor: '_Tuple2', _0: true, _1: model.level + 1} : {ctor: '_Tuple2', _0: false, _1: model.level};
-						var splashScreen = _p15._0;
-						var level = _p15._1;
-						var treadmill = correct ? A2(
-							_elm_lang$core$List$filter,
-							function (_p16) {
-								var _p17 = _p16;
-								return !_elm_lang$core$Native_Utils.eq(_p17._0, _p18);
-							},
-							model.treadmill) : model.treadmill;
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{notice: notice, points: points, splashScreen: splashScreen, level: level, treadmill: treadmill}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					case 'Resize':
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{
-									windowSize: A2(_elm_lang$core$Debug$log, 'new size', _p12._0)
-								}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-					case 'Animate':
-						var idsItemsCmds = A2(
-							_elm_lang$core$List$map,
-							function (_p19) {
-								var _p20 = _p19;
-								return {
-									ctor: '_Tuple2',
-									_0: _p20._0,
-									_1: A2(_user$project$Item$updateItemAnimation, _p12._0, _p20._1)
-								};
-							},
-							model.treadmill);
-						var _p21 = _elm_lang$core$List$unzip(idsItemsCmds);
-						var ids = _p21._0;
-						var itemCmds = _p21._1;
-						var _p22 = _elm_lang$core$List$unzip(itemCmds);
-						var items = _p22._0;
-						var cmds = _p22._1;
-						var newItems = A2(_user$project$Main$zip, ids, items);
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{treadmill: newItems}),
-							_1: _elm_lang$core$Platform_Cmd$batch(cmds)
-						};
-					default:
-						var newTreadmill = A2(
-							_elm_lang$core$List$filter,
-							function (_p23) {
-								var _p24 = _p23;
-								return !_elm_lang$core$Native_Utils.eq(_p24._0, _p12._0);
-							},
-							model.treadmill);
-						return {
-							ctor: '_Tuple2',
-							_0: _elm_lang$core$Native_Utils.update(
-								model,
-								{treadmill: newTreadmill}),
-							_1: _elm_lang$core$Platform_Cmd$none
-						};
-				}
+		var _p10 = msg;
+		if (_p10.ctor === 'Resize') {
+			return {
+				ctor: '_Tuple2',
+				_0: _elm_lang$core$Native_Utils.update(
+					model,
+					{windowSize: _p10._0}),
+				_1: _elm_lang$core$Platform_Cmd$none
+			};
+		} else {
+			var _p11 = model.game;
+			switch (_p11.ctor) {
+				case 'SplashScreen':
+					return A2(_user$project$Main$updateSplashScreen, msg, model);
+				case 'MakeACake':
+					if (_p11._0.ctor === 'Starting') {
+						return A2(_user$project$Main$startMakeACake, msg, model);
+					} else {
+						return A2(_user$project$Main$updateMakeACake, msg, model);
+					}
+				default:
+					return A2(_user$project$Main$updateClassicGame, msg, model);
 			}
 		}
 	});
@@ -16386,72 +16491,125 @@ var _user$project$Main$splashScreenView = function (model) {
 				})));
 };
 var _user$project$Main$view = function (model) {
-	return model.splashScreen ? _user$project$Main$splashScreenView(model) : A2(
-		_elm_lang$html$Html$div,
-		{ctor: '[]'},
-		{
-			ctor: '::',
-			_0: A2(
-				_elm_lang$html$Html$span,
+	var _p12 = model.game;
+	switch (_p12.ctor) {
+		case 'SplashScreen':
+			return _user$project$Main$splashScreenView(model);
+		case 'MakeACake':
+			return A2(
+				_elm_lang$html$Html$div,
+				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _elm_lang$html$Html_Attributes$style(
+					_0: A2(
+						_elm_lang$html$Html$span,
 						{
 							ctor: '::',
-							_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'right'},
-							_1: {
-								ctor: '::',
-								_0: {ctor: '_Tuple2', _0: 'padding', _1: '50px'},
-								_1: {ctor: '[]'}
-							}
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'right'},
+									_1: {
+										ctor: '::',
+										_0: {ctor: '_Tuple2', _0: 'padding', _1: '50px'},
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _user$project$Main$pointsView(model),
+							_1: {ctor: '[]'}
 						}),
-					_1: {ctor: '[]'}
-				},
-				{
-					ctor: '::',
-					_0: _user$project$Main$pointsView(model),
-					_1: {ctor: '[]'}
-				}),
-			_1: {
-				ctor: '::',
-				_0: _user$project$Main$word(model),
-				_1: {
-					ctor: '::',
-					_0: _user$project$Main$notice(model),
 					_1: {
 						ctor: '::',
-						_0: _user$project$Main$treadmill(model),
+						_0: A4(_user$project$Treadmill$view, model.windowSize.width, _user$project$Main$ItemClicked, _user$project$Main$ItemTouched, model.treadmill),
 						_1: {ctor: '[]'}
 					}
-				}
-			}
-		});
+				});
+		default:
+			return A2(
+				_elm_lang$html$Html$div,
+				{ctor: '[]'},
+				{
+					ctor: '::',
+					_0: A2(
+						_elm_lang$html$Html$span,
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html_Attributes$style(
+								{
+									ctor: '::',
+									_0: {ctor: '_Tuple2', _0: 'text-align', _1: 'right'},
+									_1: {
+										ctor: '::',
+										_0: {ctor: '_Tuple2', _0: 'padding', _1: '50px'},
+										_1: {ctor: '[]'}
+									}
+								}),
+							_1: {ctor: '[]'}
+						},
+						{
+							ctor: '::',
+							_0: _user$project$Main$pointsView(model),
+							_1: {ctor: '[]'}
+						}),
+					_1: {
+						ctor: '::',
+						_0: _user$project$Main$word(model),
+						_1: {
+							ctor: '::',
+							_0: _user$project$Main$notice(model),
+							_1: {
+								ctor: '::',
+								_0: A4(_user$project$Treadmill$view, model.windowSize.width, _user$project$Main$ItemClicked, _user$project$Main$ItemTouched, model.treadmill),
+								_1: {ctor: '[]'}
+							}
+						}
+					}
+				});
+	}
 };
-var _user$project$Main$Animate = function (a) {
-	return {ctor: 'Animate', _0: a};
+var _user$project$Main$TreadmillMsg = function (a) {
+	return {ctor: 'TreadmillMsg', _0: a};
 };
 var _user$project$Main$subscriptions = function (model) {
-	return model.splashScreen ? _elm_lang$window$Window$resizes(_user$project$Main$Resize) : _elm_lang$core$Platform_Sub$batch(
-		{
-			ctor: '::',
-			_0: A2(
-				_mdgriffith$elm_style_animation$Animation$subscription,
-				_user$project$Main$Animate,
-				_user$project$Main$itemStyles(model.treadmill)),
-			_1: {
-				ctor: '::',
-				_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _user$project$Main$Tick),
-				_1: {
+	var _p13 = model.game;
+	switch (_p13.ctor) {
+		case 'SplashScreen':
+			return _elm_lang$window$Window$resizes(_user$project$Main$Resize);
+		case 'MakeACake':
+			return _elm_lang$core$Platform_Sub$batch(
+				{
 					ctor: '::',
-					_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second * 5, _user$project$Main$NewWord),
+					_0: A2(_user$project$Treadmill$subscription, _user$project$Main$TreadmillMsg, model.treadmill),
 					_1: {
 						ctor: '::',
 						_0: _elm_lang$window$Window$resizes(_user$project$Main$Resize),
 						_1: {ctor: '[]'}
 					}
-				}
-			}
-		});
+				});
+		default:
+			return _elm_lang$core$Platform_Sub$batch(
+				{
+					ctor: '::',
+					_0: A2(_user$project$Treadmill$subscription, _user$project$Main$TreadmillMsg, model.treadmill),
+					_1: {
+						ctor: '::',
+						_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second, _user$project$Main$Tick),
+						_1: {
+							ctor: '::',
+							_0: A2(_elm_lang$core$Time$every, _elm_lang$core$Time$second * 5, _user$project$Main$NewWord),
+							_1: {
+								ctor: '::',
+								_0: _elm_lang$window$Window$resizes(_user$project$Main$Resize),
+								_1: {ctor: '[]'}
+							}
+						}
+					}
+				});
+	}
 };
 var _user$project$Main$main = _elm_lang$html$Html$program(
 	{init: _user$project$Main$init, view: _user$project$Main$view, update: _user$project$Main$update, subscriptions: _user$project$Main$subscriptions})();
