@@ -60,6 +60,11 @@ initImg imgSrc =
     }
 
 
+bowl : Model msg
+bowl =
+    initItem "bowl" "imgs/cake-bowl.png" []
+
+
 
 -- ANIMATION
 
