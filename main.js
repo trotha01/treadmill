@@ -16286,69 +16286,73 @@ var _user$project$Main$addItem = function (model) {
 };
 var _user$project$Main$updateClassicGame = F2(
 	function (msg, model) {
-		var _p6 = msg;
-		switch (_p6.ctor) {
-			case 'Start':
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
-			case 'NewWord':
-				return {
-					ctor: '_Tuple2',
-					_0: _user$project$Main$nextWord(model),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
-			case 'Tick':
-				return {
-					ctor: '_Tuple2',
-					_0: _user$project$Main$addItem(model),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
-			case 'ItemTouched':
-				return A2(
-					_user$project$Main$update,
-					A2(_user$project$Main$ItemClicked, _p6._0, _p6._1),
-					model);
-			case 'ItemClicked':
-				var treadmill = A2(_user$project$Treadmill$removeItem, _p6._0, model.treadmill);
-				var currentItem = _user$project$Zipper$current(model.items);
-				var _p7 = _elm_lang$core$Native_Utils.eq(_p6._1.word, currentItem.word) ? {ctor: '_Tuple3', _0: true, _1: 'Yes!', _2: model.points + 10} : {ctor: '_Tuple3', _0: false, _1: 'Try Again!', _2: model.points};
-				var correct = _p7._0;
-				var notice = _p7._1;
-				var points = _p7._2;
-				var _p8 = (correct && ((!_elm_lang$core$Native_Utils.eq(points, 0)) && _elm_lang$core$Native_Utils.eq(
-					A2(_elm_lang$core$Basics_ops['%'], points, 50),
-					0))) ? {ctor: '_Tuple2', _0: _user$project$Main$SplashScreen, _1: model.level + 1} : {ctor: '_Tuple2', _0: _user$project$Main$ClassicTreadmill, _1: model.level};
-				var game = _p8._0;
-				var level = _p8._1;
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{notice: notice, points: points, game: game, level: level, treadmill: treadmill}),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
-			case 'TreadmillMsg':
-				var _p9 = A2(_user$project$Treadmill$update, _p6._0, model.treadmill);
-				var newTreadmill = _p9._0;
-				var cmd = _p9._1;
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{treadmill: newTreadmill}),
-					_1: cmd
-				};
-			case 'Done':
-				return {
-					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.update(
-						model,
-						{
-							treadmill: A2(_user$project$Treadmill$removeItem, _p6._0, model.treadmill)
-						}),
-					_1: _elm_lang$core$Platform_Cmd$none
-				};
-			default:
-				return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+		updateClassicGame:
+		while (true) {
+			var _p6 = msg;
+			switch (_p6.ctor) {
+				case 'Start':
+					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+				case 'NewWord':
+					return {
+						ctor: '_Tuple2',
+						_0: _user$project$Main$nextWord(model),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				case 'Tick':
+					return {
+						ctor: '_Tuple2',
+						_0: _user$project$Main$addItem(model),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				case 'ItemTouched':
+					var _v4 = A2(_user$project$Main$ItemClicked, _p6._0, _p6._1),
+						_v5 = model;
+					msg = _v4;
+					model = _v5;
+					continue updateClassicGame;
+				case 'ItemClicked':
+					var currentItem = _user$project$Zipper$current(model.items);
+					var _p7 = _elm_lang$core$Native_Utils.eq(_p6._1.word, currentItem.word) ? {ctor: '_Tuple3', _0: true, _1: 'Yes!', _2: model.points + 10} : {ctor: '_Tuple3', _0: false, _1: 'Try Again!', _2: model.points};
+					var correct = _p7._0;
+					var notice = _p7._1;
+					var points = _p7._2;
+					var _p8 = (correct && ((!_elm_lang$core$Native_Utils.eq(points, 0)) && _elm_lang$core$Native_Utils.eq(
+						A2(_elm_lang$core$Basics_ops['%'], points, 50),
+						0))) ? {ctor: '_Tuple2', _0: _user$project$Main$SplashScreen, _1: model.level + 1} : {ctor: '_Tuple2', _0: _user$project$Main$ClassicTreadmill, _1: model.level};
+					var game = _p8._0;
+					var level = _p8._1;
+					var treadmill = correct ? A2(_user$project$Treadmill$removeItem, _p6._0, model.treadmill) : model.treadmill;
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{notice: notice, points: points, game: game, level: level, treadmill: treadmill}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				case 'TreadmillMsg':
+					var _p9 = A2(_user$project$Treadmill$update, _p6._0, model.treadmill);
+					var newTreadmill = _p9._0;
+					var cmd = _p9._1;
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{treadmill: newTreadmill}),
+						_1: cmd
+					};
+				case 'Done':
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								treadmill: A2(_user$project$Treadmill$removeItem, _p6._0, model.treadmill)
+							}),
+						_1: _elm_lang$core$Platform_Cmd$none
+					};
+				default:
+					return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+			}
 		}
 	});
 var _user$project$Main$update = F2(

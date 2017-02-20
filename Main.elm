@@ -155,7 +155,7 @@ updateClassicGame msg model =
             ( addItem model, Cmd.none )
 
         ItemTouched id clickedItem _ ->
-            update (ItemClicked id clickedItem) model
+            updateClassicGame (ItemClicked id clickedItem) model
 
         ItemClicked id clickedItem ->
             let
@@ -176,7 +176,10 @@ updateClassicGame msg model =
                         ( ClassicTreadmill, model.level )
 
                 treadmill =
-                    Treadmill.removeItem id model.treadmill
+                    if correct then
+                        Treadmill.removeItem id model.treadmill
+                    else
+                        model.treadmill
             in
                 ( { model
                     | notice = notice
