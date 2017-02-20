@@ -81,105 +81,125 @@ type Msg
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case model.game of
-        SplashScreen ->
-            case msg of
-                Start ->
-                    ( { model | game = ClassicTreadmill }, Cmd.none )
+    case msg of
+        Resize newSize ->
+            ( { model | windowSize = newSize }, Cmd.none )
 
-                Resize newSize ->
-                    ( { model | windowSize = newSize }, Cmd.none )
+        _ ->
+            case model.game of
+                SplashScreen ->
+                    updateSplashScreen msg model
 
-                TreadmillMsg msg ->
-                    let
-                        ( newTreadmill, cmd ) =
-                            Treadmill.update msg model.treadmill
-                    in
-                        ( { model | treadmill = newTreadmill }, cmd )
+                MakeACake Starting ->
+                    startMakeACake msg model
 
-                _ ->
-                    ( model, Cmd.none )
+                MakeACake Running ->
+                    updateMakeACake msg model
 
-        MakeACake status ->
-            case status of
-                Starting ->
-                    ( addBowl model, Cmd.none )
+                ClassicTreadmill ->
+                    updateClassicGame msg model
 
-                Running ->
-                    case msg of
-                        TreadmillMsg msg ->
-                            let
-                                ( newTreadmill, cmd ) =
-                                    Treadmill.update msg model.treadmill
-                            in
-                                ( { model | treadmill = newTreadmill }, cmd )
 
-                        Resize newSize ->
-                            ( { model | windowSize = newSize }, Cmd.none )
+updateSplashScreen : Msg -> Model -> ( Model, Cmd Msg )
+updateSplashScreen msg model =
+    case msg of
+        Start ->
+            ( { model | game = ClassicTreadmill }, Cmd.none )
 
-                        Done id img ->
-                            ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
+        TreadmillMsg msg ->
+            let
+                ( newTreadmill, cmd ) =
+                    Treadmill.update msg model.treadmill
+            in
+                ( { model | treadmill = newTreadmill }, cmd )
 
-                        _ ->
-                            ( model, Cmd.none )
+        _ ->
+            ( model, Cmd.none )
 
-        ClassicTreadmill ->
-            case msg of
-                Start ->
-                    ( model, Cmd.none )
 
-                NewWord _ ->
-                    ( nextWord model, Cmd.none )
+startMakeACake : Msg -> Model -> ( Model, Cmd Msg )
+startMakeACake msg model =
+    ( addBowl model, Cmd.none )
 
-                Tick _ ->
-                    ( addItem model, Cmd.none )
 
-                ItemTouched id clickedItem _ ->
-                    update (ItemClicked id clickedItem) model
+updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
+updateMakeACake msg model =
+    case msg of
+        TreadmillMsg msg ->
+            let
+                ( newTreadmill, cmd ) =
+                    Treadmill.update msg model.treadmill
+            in
+                ( { model | treadmill = newTreadmill }, cmd )
 
-                ItemClicked id clickedItem ->
-                    let
-                        currentItem =
-                            Zipper.current model.items
+        Resize newSize ->
+            ( { model | windowSize = newSize }, Cmd.none )
 
-                        ( correct, notice, points ) =
-                            if clickedItem.word == currentItem.word then
-                                ( True, "Yes!", model.points + 10 )
-                            else
-                                ( False, "Try Again!", model.points )
+        Done id img ->
+            ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
 
-                        ( game, level ) =
-                            if correct && points /= 0 && (points % 50 == 0) then
-                                -- Level Up
-                                ( SplashScreen, model.level + 1 )
-                            else
-                                ( ClassicTreadmill, model.level )
+        _ ->
+            ( model, Cmd.none )
 
-                        treadmill =
-                            Treadmill.removeItem id model.treadmill
-                    in
-                        ( { model
-                            | notice = notice
-                            , points = points
-                            , game = game
-                            , level = level
-                            , treadmill = treadmill
-                          }
-                        , Cmd.none
-                        )
 
-                Resize newSize ->
-                    ( { model | windowSize = newSize }, Cmd.none )
+updateClassicGame : Msg -> Model -> ( Model, Cmd Msg )
+updateClassicGame msg model =
+    case msg of
+        Start ->
+            ( model, Cmd.none )
 
-                TreadmillMsg msg ->
-                    let
-                        ( newTreadmill, cmd ) =
-                            Treadmill.update msg model.treadmill
-                    in
-                        ( { model | treadmill = newTreadmill }, cmd )
+        NewWord _ ->
+            ( nextWord model, Cmd.none )
 
-                Done id img ->
-                    ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
+        Tick _ ->
+            ( addItem model, Cmd.none )
+
+        ItemTouched id clickedItem _ ->
+            update (ItemClicked id clickedItem) model
+
+        ItemClicked id clickedItem ->
+            let
+                currentItem =
+                    Zipper.current model.items
+
+                ( correct, notice, points ) =
+                    if clickedItem.word == currentItem.word then
+                        ( True, "Yes!", model.points + 10 )
+                    else
+                        ( False, "Try Again!", model.points )
+
+                ( game, level ) =
+                    if correct && points /= 0 && (points % 50 == 0) then
+                        -- Level Up
+                        ( SplashScreen, model.level + 1 )
+                    else
+                        ( ClassicTreadmill, model.level )
+
+                treadmill =
+                    Treadmill.removeItem id model.treadmill
+            in
+                ( { model
+                    | notice = notice
+                    , points = points
+                    , game = game
+                    , level = level
+                    , treadmill = treadmill
+                  }
+                , Cmd.none
+                )
+
+        TreadmillMsg msg ->
+            let
+                ( newTreadmill, cmd ) =
+                    Treadmill.update msg model.treadmill
+            in
+                ( { model | treadmill = newTreadmill }, cmd )
+
+        Done id img ->
+            ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 nextWord : Model -> Model
