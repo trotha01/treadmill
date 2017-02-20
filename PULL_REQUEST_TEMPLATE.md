@@ -1,0 +1,1 @@
+- [ ] run ./bin/build and commit new main.js
