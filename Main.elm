@@ -4,6 +4,9 @@ import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Item
+import Json.Decode as Decode
+import Math.Vector2 as Vector2 exposing (Vec2, getX, getY, vec2)
+import Mouse
 import Random exposing (Generator)
 import Task
 import Time
@@ -35,6 +38,15 @@ type alias Model =
     , notice : String
     , level : Int
     , game : Game
+    , cakeOptions : Zipper CakeOption
+    }
+
+
+type alias CakeOption =
+    { word : String
+    , position : Vec2
+    , clicked : Bool
+    , dragging : Bool
     }
 
 
@@ -59,9 +71,24 @@ init =
       , notice = ""
       , level = 1
       , game = SplashScreen
+      , cakeOptions =
+            Zipper.singleton (initCakeOption "leche")
+                |> Zipper.appendList
+                    [ initCakeOption "silla"
+                    , initCakeOption "mesa"
+                    ]
       }
     , Task.perform Resize (Window.size)
     )
+
+
+initCakeOption : String -> CakeOption
+initCakeOption word =
+    { word = word
+    , position = vec2 0 0
+    , clicked = False
+    , dragging = False
+    }
 
 
 
@@ -77,6 +104,9 @@ type Msg
     | NewWord Time.Time
     | ItemClicked Int (Item.Model Msg)
     | ItemTouched Int (Item.Model Msg) Touch
+    | DragStart String Mouse.Position
+    | DragAt Mouse.Position
+    | DragEnd Mouse.Position
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -104,7 +134,7 @@ updateSplashScreen : Msg -> Model -> ( Model, Cmd Msg )
 updateSplashScreen msg model =
     case msg of
         Start ->
-            ( { model | game = ClassicTreadmill }, Cmd.none )
+            ( { model | game = MakeACake Starting }, Cmd.none )
 
         TreadmillMsg msg ->
             let
@@ -119,7 +149,8 @@ updateSplashScreen msg model =
 
 startMakeACake : Msg -> Model -> ( Model, Cmd Msg )
 startMakeACake msg model =
-    ( addBowl model, Cmd.none )
+    -- ( addBowl model, Cmd.none )
+    ( { model | game = MakeACake Running }, Cmd.none )
 
 
 updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
@@ -137,6 +168,41 @@ updateMakeACake msg model =
 
         Done id img ->
             ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
+
+        DragStart word pos ->
+            let
+                cakeOptions =
+                    (Maybe.withDefault model.cakeOptions
+                        (Zipper.first model.cakeOptions
+                            |> Zipper.find (\option -> option.word == word)
+                        )
+                    )
+                        |> Zipper.mapCurrent (\option -> { option | dragging = True })
+            in
+                ( { model | cakeOptions = cakeOptions }, Cmd.none )
+
+        DragAt pos ->
+            let
+                cakeOptions =
+                    Zipper.mapCurrent
+                        (\opt ->
+                            if opt.dragging then
+                                { opt | position = vec2 (toFloat pos.x) (toFloat pos.y) }
+                            else
+                                opt
+                        )
+                        model.cakeOptions
+            in
+                ( { model | cakeOptions = cakeOptions }, Cmd.none )
+
+        DragEnd pos ->
+            let
+                cakeOptions =
+                    Zipper.mapCurrent
+                        (\opt -> { opt | dragging = False })
+                        model.cakeOptions
+            in
+                ( { model | cakeOptions = cakeOptions }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -252,6 +318,7 @@ view model =
                 [ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
+                , cakeWords model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
 
@@ -265,6 +332,41 @@ view model =
                 , notice model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
+
+
+onMouseDown : String -> Html.Attribute Msg
+onMouseDown word =
+    on "mousedown" (Decode.map (DragStart word) Mouse.position)
+
+
+cakeWordStyle : Vec2 -> Html.Attribute Msg
+cakeWordStyle pos =
+    style
+        [ ( "background-color", "lightblue" )
+        , ( "position", "relative" )
+        , ( "left", Debug.log "x" ((getX pos |> toString) ++ "px") )
+        , ( "right", Debug.log "y" ((getY pos |> toString) ++ "px") )
+        , ( "width", "75px" )
+        , ( "height", "75px" )
+        , ( "border", "2px solid black" )
+        , ( "text-align", "center" )
+        , ( "vertical-align", "middle" )
+        ]
+
+
+cakeWords : Model -> Html Msg
+cakeWords model =
+    Html.div []
+        (Zipper.toList model.cakeOptions
+            |> List.map cakeWord
+        )
+
+
+cakeWord : CakeOption -> Html Msg
+cakeWord cakeOption =
+    Html.div
+        [ cakeWordStyle cakeOption.position, onMouseDown cakeOption.word ]
+        [ Html.span [] [ Html.text cakeOption.word ] ]
 
 
 splashScreenView : Model -> Html Msg
@@ -347,6 +449,8 @@ subscriptions model =
             Sub.batch
                 [ Treadmill.subscription TreadmillMsg model.treadmill
                 , Window.resizes Resize
+                , Mouse.moves DragAt
+                , Mouse.ups DragEnd
                 ]
 
         _ ->
