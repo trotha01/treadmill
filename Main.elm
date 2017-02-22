@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import BoundingBox exposing (fromCorners, inside)
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -43,10 +44,11 @@ type alias Model =
 
 
 type alias CakeOption =
-    { word : String
+    { item : Item.Model Msg
     , position : Vec2
     , clicked : Bool
     , dragging : Bool
+    , inBowl : Bool
     }
 
 
@@ -72,22 +74,20 @@ init =
       , level = 1
       , game = SplashScreen
       , cakeOptions =
-            Zipper.singleton (initCakeOption "leche")
-                |> Zipper.appendList
-                    [ initCakeOption "silla"
-                    , initCakeOption "mesa"
-                    ]
+            Item.initItems
+                |> Zipper.map initCakeOption
       }
     , Task.perform Resize (Window.size)
     )
 
 
-initCakeOption : String -> CakeOption
-initCakeOption word =
-    { word = word
+initCakeOption : Item.Model Msg -> CakeOption
+initCakeOption item =
+    { item = item
     , position = vec2 0 0
     , clicked = False
     , dragging = False
+    , inBowl = False
     }
 
 
@@ -174,7 +174,7 @@ updateMakeACake msg model =
                 cakeOptions =
                     (Maybe.withDefault model.cakeOptions
                         (Zipper.first model.cakeOptions
-                            |> Zipper.find (\option -> option.word == word)
+                            |> Zipper.find (\option -> option.item.word == word)
                         )
                     )
                         |> Zipper.mapCurrent (\option -> { option | dragging = True })
@@ -183,17 +183,35 @@ updateMakeACake msg model =
 
         DragAt pos ->
             let
+                dragOption opt =
+                    if opt.dragging then
+                        { opt | position = vec2 (toFloat pos.x) (toFloat pos.y) }
+                    else
+                        opt
+
+                bbox =
+                    Debug.log "bbox" <| fromCorners (vec2 50 50) (vec2 150 150)
+
+                inBowl opt =
+                    let
+                        ( x2, y2 ) =
+                            ( (getX opt.position) + 1, (getY opt.position) + 1 )
+
+                        optBox =
+                            Debug.log "optBox" <| fromCorners (opt.position) (vec2 x2 y2)
+                    in
+                        if inside optBox bbox then
+                            { opt | inBowl = True }
+                        else
+                            { opt | inBowl = False }
+
                 cakeOptions =
-                    Zipper.mapCurrent
-                        (\opt ->
-                            if opt.dragging then
-                                { opt | position = vec2 (toFloat pos.x) (toFloat pos.y) }
-                            else
-                                opt
-                        )
-                        model.cakeOptions
+                    Zipper.mapCurrent dragOption model.cakeOptions
+
+                cakeOptions2 =
+                    Zipper.mapCurrent inBowl cakeOptions
             in
-                ( { model | cakeOptions = cakeOptions }, Cmd.none )
+                ( { model | cakeOptions = cakeOptions2 }, Cmd.none )
 
         DragEnd pos ->
             let
@@ -318,6 +336,7 @@ view model =
                 [ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
+                , bowl
                 , cakeWords model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
@@ -339,18 +358,43 @@ onMouseDown word =
     on "mousedown" (Decode.map (DragStart word) Mouse.position)
 
 
+bowl : Html Msg
+bowl =
+    Html.div
+        [ cakeWordStyle (vec2 100 100) ]
+        [ Html.span [] [ Html.text "bowl" ] ]
+
+
 cakeWordStyle : Vec2 -> Html.Attribute Msg
 cakeWordStyle pos =
     style
         [ ( "background-color", "lightblue" )
-        , ( "position", "relative" )
-        , ( "left", Debug.log "x" ((getX pos |> toString) ++ "px") )
-        , ( "right", Debug.log "y" ((getY pos |> toString) ++ "px") )
+        , ( "position", "absolute" )
+        , ( "left", ((getX pos |> toString) ++ "px") )
+        , ( "top", ((getY pos |> toString) ++ "px") )
         , ( "width", "75px" )
         , ( "height", "75px" )
         , ( "border", "2px solid black" )
         , ( "text-align", "center" )
         , ( "vertical-align", "middle" )
+        , ( "cursor", "pointer" )
+        , ( "user-select", "none" )
+        ]
+
+
+cakeImgStyle : Vec2 -> Html.Attribute Msg
+cakeImgStyle pos =
+    style
+        [ ( "position", "absolute" )
+        , ( "left", ((getX pos |> toString) ++ "px") )
+        , ( "top", ((getY pos |> toString) ++ "px") )
+        , ( "width", "75px" )
+        , ( "height", "75px" )
+        , ( "border", "2px solid black" )
+        , ( "text-align", "center" )
+        , ( "vertical-align", "middle" )
+        , ( "cursor", "pointer" )
+        , ( "user-select", "none" )
         ]
 
 
@@ -364,9 +408,19 @@ cakeWords model =
 
 cakeWord : CakeOption -> Html Msg
 cakeWord cakeOption =
-    Html.div
-        [ cakeWordStyle cakeOption.position, onMouseDown cakeOption.word ]
-        [ Html.span [] [ Html.text cakeOption.word ] ]
+    if cakeOption.inBowl then
+        Html.div
+            [ cakeImgStyle cakeOption.position, onMouseDown cakeOption.item.word ]
+            [ Html.img
+                [ style [ ( "width", "75px" ), ( "height", "75px" ) ]
+                , src (cakeOption.item.imgs |> Zipper.current |> .src)
+                ]
+                []
+            ]
+    else
+        Html.div
+            [ cakeWordStyle cakeOption.position, onMouseDown cakeOption.item.word ]
+            [ Html.span [] [ Html.text cakeOption.item.word ] ]
 
 
 splashScreenView : Model -> Html Msg
