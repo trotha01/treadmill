@@ -58,12 +58,7 @@ type alias CakeOption =
 type Game
     = SplashScreen
     | ClassicTreadmill
-    | MakeACake Status
-
-
-type Status
-    = Starting
-    | Running
+    | MakeACake
 
 
 init : ( Model, Cmd Msg )
@@ -125,10 +120,7 @@ update msg model =
                 SplashScreen ->
                     updateSplashScreen msg model
 
-                MakeACake Starting ->
-                    startMakeACake msg model
-
-                MakeACake Running ->
+                MakeACake ->
                     updateMakeACake msg model
 
                 ClassicTreadmill ->
@@ -139,7 +131,7 @@ updateSplashScreen : Msg -> Model -> ( Model, Cmd Msg )
 updateSplashScreen msg model =
     case msg of
         Start ->
-            ( { model | game = MakeACake Starting }, Cmd.none )
+            ( { model | game = MakeACake }, Cmd.none )
 
         TreadmillMsg msg ->
             let
@@ -150,15 +142,6 @@ updateSplashScreen msg model =
 
         _ ->
             ( model, Cmd.none )
-
-
-startMakeACake : Msg -> Model -> ( Model, Cmd Msg )
-startMakeACake msg model =
-    ( addBowl model, Cmd.none )
-
-
-
--- ( { model | game = MakeACake Running }, Cmd.none )
 
 
 updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
@@ -315,7 +298,7 @@ nextWord model =
 
 addBowl : Model -> Model
 addBowl model =
-    { model | game = MakeACake Running, treadmill = Treadmill.addItem model.windowSize.width Done model.treadmill Item.bowl }
+    { model | game = MakeACake, treadmill = Treadmill.addItem model.windowSize.width Done model.treadmill Item.bowl }
 
 
 addItem : Model -> Model
@@ -345,7 +328,7 @@ view model =
         SplashScreen ->
             splashScreenView model
 
-        MakeACake _ ->
+        MakeACake ->
             Html.div
                 []
                 [ Html.span
@@ -506,7 +489,7 @@ subscriptions model =
         SplashScreen ->
             Window.resizes Resize
 
-        MakeACake _ ->
+        MakeACake ->
             Sub.batch
                 [ Treadmill.subscription TreadmillMsg model.treadmill
                 , Window.resizes Resize

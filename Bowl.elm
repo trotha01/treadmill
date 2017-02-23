@@ -19,7 +19,7 @@ type alias Model =
 {-| Constants for the bowl
 -}
 ( y, bowlWidth, bowlHeight ) =
-    ( 50, 100, 100 )
+    ( 300, 100, 100 )
 
 
 
@@ -49,35 +49,25 @@ inside box bowl =
 -- VIEW
 
 
-cakeImgStyle : Vec2 -> Html.Attribute msg
-cakeImgStyle pos =
+view : Model -> Html msg
+view model =
+    Html.img
+        [ src "imgs/cake-bowl.png"
+        , bowlStyle model
+        ]
+        []
+
+
+bowlStyle : Model -> Html.Attribute msg
+bowlStyle x =
     style
         [ ( "position", "absolute" )
-        , ( "left", ((getX pos |> toString) ++ "px") )
-        , ( "top", ((getY pos |> toString) ++ "px") )
-        , ( "width", "75px" )
-        , ( "height", "75px" )
+        , ( "left", (toString x) ++ "px" )
+        , ( "top", (toString y) ++ "px" )
+        , ( "width", (toString bowlWidth) ++ "px" )
+        , ( "height", (toString bowlHeight) ++ "px" )
         , ( "text-align", "center" )
         , ( "vertical-align", "middle" )
         , ( "cursor", "pointer" )
         , ( "user-select", "none" )
-        ]
-
-
-view : Model -> Html msg
-view model =
-    Html.div
-        [ cakeImgStyle (vec2 100 100)
-        , style
-            [ ( "display", "block" )
-            , ( "position", "absolute" )
-            , ( "left", (toString model) ++ "px" )
-            ]
-        ]
-        [ Html.img
-            [ src "imgs/cake-bowl.png"
-            , width bowlWidth
-            , height bowlHeight
-            ]
-            []
         ]
