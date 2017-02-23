@@ -88,7 +88,7 @@ startImgAnimation doneMsg start end img =
                     [ Animation.left (px <| toFloat start)
                     , Animation.display Animation.block
                     ]
-                , Animation.toWith (Animation.easing { duration = Time.second * 4, ease = Ease.linear })
+                , Animation.toWith (Animation.easing { duration = Time.second * 7, ease = Ease.linear })
                     [ Animation.left (px <| toFloat end)
                     ]
                 , Animation.Messenger.send (doneMsg img)

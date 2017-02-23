@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import AnimationFrame
 import BoundingBox exposing (fromCorners, inside)
 import Html exposing (Html)
 import Html.Attributes exposing (..)
@@ -39,6 +40,7 @@ type alias Model =
     , notice : String
     , level : Int
     , game : Game
+    , bowl : Float
     , cakeOptions : Zipper CakeOption
     }
 
@@ -72,6 +74,7 @@ init =
       , points = 0
       , notice = ""
       , level = 1
+      , bowl = 1500
       , game = SplashScreen
       , cakeOptions =
             Item.initItems
@@ -107,6 +110,7 @@ type Msg
     | DragStart String Mouse.Position
     | DragAt Mouse.Position
     | DragEnd Mouse.Position
+    | MoveBowl Time.Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -149,13 +153,26 @@ updateSplashScreen msg model =
 
 startMakeACake : Msg -> Model -> ( Model, Cmd Msg )
 startMakeACake msg model =
-    -- ( addBowl model, Cmd.none )
-    ( { model | game = MakeACake Running }, Cmd.none )
+    ( addBowl model, Cmd.none )
+
+
+
+-- ( { model | game = MakeACake Running }, Cmd.none )
 
 
 updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
 updateMakeACake msg model =
     case msg of
+        MoveBowl time ->
+            let
+                vel =
+                    5
+
+                newBowl =
+                    Basics.max 0 (model.bowl - vel * (time / 100))
+            in
+                ( { model | bowl = newBowl }, Cmd.none )
+
         TreadmillMsg msg ->
             let
                 ( newTreadmill, cmd ) =
@@ -190,7 +207,7 @@ updateMakeACake msg model =
                         opt
 
                 bbox =
-                    Debug.log "bbox" <| fromCorners (vec2 50 50) (vec2 150 150)
+                    Debug.log "bbox" <| fromCorners (vec2 model.bowl 50) (vec2 (model.bowl + 150) 150)
 
                 inBowl opt =
                     let
@@ -336,7 +353,7 @@ view model =
                 [ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
-                , bowl
+                , bowl model
                 , cakeWords model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
@@ -358,10 +375,10 @@ onMouseDown word =
     on "mousedown" (Decode.map (DragStart word) Mouse.position)
 
 
-bowl : Html Msg
-bowl =
+bowl : Model -> Html Msg
+bowl model =
     Html.div
-        [ cakeWordStyle (vec2 100 100) ]
+        [ cakeWordStyle (vec2 100 100), style [ ( "display", "block" ), ( "position", "absolute" ), ( "left", (toString model.bowl) ++ "px" ) ] ]
         [ Html.span [] [ Html.text "bowl" ] ]
 
 
@@ -390,7 +407,6 @@ cakeImgStyle pos =
         , ( "top", ((getY pos |> toString) ++ "px") )
         , ( "width", "75px" )
         , ( "height", "75px" )
-        , ( "border", "2px solid black" )
         , ( "text-align", "center" )
         , ( "vertical-align", "middle" )
         , ( "cursor", "pointer" )
@@ -505,6 +521,7 @@ subscriptions model =
                 , Window.resizes Resize
                 , Mouse.moves DragAt
                 , Mouse.ups DragEnd
+                , AnimationFrame.diffs MoveBowl
                 ]
 
         _ ->
