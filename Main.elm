@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import AnimationFrame
 import BoundingBox exposing (fromCorners, inside)
+import Bowl
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -74,7 +75,7 @@ init =
       , points = 0
       , notice = ""
       , level = 1
-      , bowl = 1500
+      , bowl = 1000
       , game = SplashScreen
       , cakeOptions =
             Item.initItems
@@ -215,12 +216,9 @@ updateMakeACake msg model =
                             ( (getX opt.position) + 1, (getY opt.position) + 1 )
 
                         optBox =
-                            Debug.log "optBox" <| fromCorners (opt.position) (vec2 x2 y2)
+                            fromCorners (opt.position) (vec2 x2 y2)
                     in
-                        if inside optBox bbox then
-                            { opt | inBowl = True }
-                        else
-                            { opt | inBowl = False }
+                        { opt | inBowl = Bowl.inside optBox model.bowl }
 
                 cakeOptions =
                     Zipper.mapCurrent dragOption model.cakeOptions
@@ -353,7 +351,7 @@ view model =
                 [ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
-                , bowl model
+                , Bowl.view model.bowl
                 , cakeWords model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
@@ -373,13 +371,6 @@ view model =
 onMouseDown : String -> Html.Attribute Msg
 onMouseDown word =
     on "mousedown" (Decode.map (DragStart word) Mouse.position)
-
-
-bowl : Model -> Html Msg
-bowl model =
-    Html.div
-        [ cakeWordStyle (vec2 100 100), style [ ( "display", "block" ), ( "position", "absolute" ), ( "left", (toString model.bowl) ++ "px" ) ] ]
-        [ Html.span [] [ Html.text "bowl" ] ]
 
 
 cakeWordStyle : Vec2 -> Html.Attribute Msg
