@@ -74,16 +74,16 @@ init =
       , game = SplashScreen
       , cakeOptions =
             Item.initItems
-                |> Zipper.map initCakeOption
+                |> Zipper.indexedMap initCakeOption
       }
     , Task.perform Resize (Window.size)
     )
 
 
-initCakeOption : Item.Model Msg -> CakeOption
-initCakeOption item =
+initCakeOption : Int -> Item.Model Msg -> CakeOption
+initCakeOption i item =
     { item = item
-    , position = vec2 0 0
+    , position = vec2 (i * 75 |> toFloat) 50
     , clicked = False
     , dragging = False
     , inBowl = False
@@ -191,7 +191,7 @@ updateMakeACake msg model =
                         opt
 
                 bbox =
-                    Debug.log "bbox" <| fromCorners (vec2 model.bowl 50) (vec2 (model.bowl + 150) 150)
+                    fromCorners (vec2 model.bowl 50) (vec2 (model.bowl + 150) 150)
 
                 inBowl opt =
                     let
@@ -334,8 +334,8 @@ view model =
                 [ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
-                , Bowl.view model.bowl
                 , cakeWords model
+                , Bowl.view model.bowl
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
 
@@ -361,7 +361,7 @@ cakeWordStyle pos =
     style
         [ ( "background-color", "lightblue" )
         , ( "position", "absolute" )
-        , ( "left", ((getX pos |> toString) ++ "px") )
+        , ( "left", (getX pos |> toString) ++ "px" )
         , ( "top", ((getY pos |> toString) ++ "px") )
         , ( "width", "75px" )
         , ( "height", "75px" )
@@ -377,7 +377,7 @@ cakeImgStyle : Vec2 -> Html.Attribute Msg
 cakeImgStyle pos =
     style
         [ ( "position", "absolute" )
-        , ( "left", ((getX pos |> toString) ++ "px") )
+        , ( "left", (getX pos |> toString) ++ "px" )
         , ( "top", ((getY pos |> toString) ++ "px") )
         , ( "width", "75px" )
         , ( "height", "75px" )
@@ -400,7 +400,9 @@ cakeWord : CakeOption -> Html Msg
 cakeWord cakeOption =
     if cakeOption.inBowl then
         Html.div
-            [ cakeImgStyle cakeOption.position, onMouseDown cakeOption.item.word ]
+            [ cakeImgStyle cakeOption.position
+            , onMouseDown cakeOption.item.word
+            ]
             [ Html.img
                 [ style [ ( "width", "75px" ), ( "height", "75px" ) ]
                 , src (cakeOption.item.imgs |> Zipper.current |> .src)
@@ -409,7 +411,9 @@ cakeWord cakeOption =
             ]
     else
         Html.div
-            [ cakeWordStyle cakeOption.position, onMouseDown cakeOption.item.word ]
+            [ cakeWordStyle cakeOption.position
+            , onMouseDown cakeOption.item.word
+            ]
             [ Html.span [] [ Html.text cakeOption.item.word ] ]
 
 
