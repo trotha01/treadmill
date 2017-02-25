@@ -41,7 +41,7 @@ type alias Model =
     , notice : String
     , level : Int
     , game : Game
-    , bowl : Float
+    , bowl : Bowl.Model Msg
     , cakeOptions : Zipper CakeOption
     }
 
@@ -52,6 +52,7 @@ type alias CakeOption =
     , clicked : Bool
     , dragging : Bool
     , inBowl : Bool
+    , cakeIngredient : Bool
     }
 
 
@@ -70,7 +71,7 @@ init =
       , points = 0
       , notice = ""
       , level = 1
-      , bowl = 1000
+      , bowl = Bowl.init 1000
       , game = SplashScreen
       , cakeOptions =
             Item.initItems
@@ -87,6 +88,7 @@ initCakeOption i item =
     , clicked = False
     , dragging = False
     , inBowl = False
+    , cakeIngredient = (item.word == "leche") || (item.word == "café")
     }
 
 
@@ -148,14 +150,7 @@ updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
 updateMakeACake msg model =
     case msg of
         MoveBowl time ->
-            let
-                vel =
-                    5
-
-                newBowl =
-                    Basics.max 0 (model.bowl - vel * (time / 100))
-            in
-                ( { model | bowl = newBowl }, Cmd.none )
+            ( { model | bowl = Bowl.step time model.bowl }, Cmd.none )
 
         TreadmillMsg msg ->
             let
@@ -191,7 +186,7 @@ updateMakeACake msg model =
                         opt
 
                 bbox =
-                    fromCorners (vec2 model.bowl 50) (vec2 (model.bowl + 150) 150)
+                    Bowl.boundingBoxFromBowl model.bowl
 
                 inBowl opt =
                     let
@@ -294,11 +289,6 @@ nextWord model =
             Zipper.next model.items
                 |> Maybe.withDefault (Zipper.first model.items)
     }
-
-
-addBowl : Model -> Model
-addBowl model =
-    { model | game = MakeACake, treadmill = Treadmill.addItem model.windowSize.width Done model.treadmill Item.bowl }
 
 
 addItem : Model -> Model
@@ -494,13 +484,19 @@ subscriptions model =
             Window.resizes Resize
 
         MakeACake ->
-            Sub.batch
-                [ Treadmill.subscription TreadmillMsg model.treadmill
-                , Window.resizes Resize
-                , Mouse.moves DragAt
-                , Mouse.ups DragEnd
-                , AnimationFrame.diffs MoveBowl
-                ]
+            if Bowl.done model.bowl then
+                Sub.batch
+                    [ Window.resizes Resize
+                    , Mouse.moves DragAt
+                    , Mouse.ups DragEnd
+                    ]
+            else
+                Sub.batch
+                    [ Window.resizes Resize
+                    , Mouse.moves DragAt
+                    , Mouse.ups DragEnd
+                    , AnimationFrame.diffs MoveBowl
+                    ]
 
         _ ->
             Sub.batch
