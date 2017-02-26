@@ -208,12 +208,26 @@ updateMakeACake msg model =
 
         DragEnd pos ->
             let
-                cakeOptions =
-                    Zipper.mapCurrent
-                        (\opt -> { opt | dragging = False })
-                        model.cakeOptions
+                bowl =
+                    model.bowl
+
+                bbox =
+                    Bowl.boundingBoxFromBowl bowl
+
+                currentOption =
+                    Zipper.current model.cakeOptions
+
+                ( newBowl, newOptions ) =
+                    if currentOption.cakeIngredient && currentOption.inBowl then
+                        ( { bowl | items = currentOption.item :: bowl.items }
+                        , Zipper.delete model.cakeOptions |> Maybe.withDefault model.cakeOptions
+                        )
+                    else
+                        ( bowl
+                        , Zipper.mapCurrent (\opt -> { opt | dragging = False }) model.cakeOptions
+                        )
             in
-                ( { model | cakeOptions = cakeOptions }, Cmd.none )
+                ( { model | cakeOptions = newOptions, bowl = newBowl }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

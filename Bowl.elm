@@ -1,12 +1,13 @@
 module Bowl exposing (..)
 
 import BoundingBox exposing (BoundingBox)
-import Item
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Item
 import Math.Vector2 as Vector2 exposing (Vec2, getX, getY, vec2)
 import Time exposing (Time)
+import Zipper
 
 
 -- MODEL
@@ -80,11 +81,47 @@ step time bowl =
 
 view : Model msg -> Html msg
 view model =
-    Html.img
-        [ src "imgs/cake-bowl.png"
-        , bowlStyle model.x
+    Html.div [ bowlStyle model.x ]
+        [ Html.img
+            [ bowlImgStyle
+            , src "imgs/cake-bowl.png"
+            ]
+            []
+        , viewItems model
         ]
-        []
+
+
+viewItems : Model msg -> Html msg
+viewItems model =
+    Html.div [] (List.indexedMap (viewItem model.x) model.items)
+
+
+viewItem : Float -> Int -> Item.Model msg -> Html msg
+viewItem x i item =
+    let
+        img =
+            Zipper.current item.imgs
+    in
+        Html.img
+            [ src img.src
+            , width 50
+            , height 50
+            , style
+                [ ( "position", "absolute" )
+                , ( "left", (i * 50 |> toString) ++ "px" )
+                ]
+            ]
+            []
+
+
+bowlImgStyle : Html.Attribute msg
+bowlImgStyle =
+    style
+        [ ( "width", (toString bowlWidth) ++ "px" )
+        , ( "height", (toString bowlHeight) ++ "px" )
+        , ( "left", "0px" )
+        , ( "position", "absolute" )
+        ]
 
 
 bowlStyle : Float -> Html.Attribute msg
