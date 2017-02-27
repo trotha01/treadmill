@@ -48,6 +48,7 @@ type alias Model =
 
 type alias CakeOption =
     { item : Item.Model Msg
+    , id : Int
     , position : Vec2
     , clicked : Bool
     , dragging : Bool
@@ -84,6 +85,7 @@ init =
 initCakeOption : Int -> Item.Model Msg -> CakeOption
 initCakeOption i item =
     { item = item
+    , id = i
     , position = vec2 (i * 75 |> toFloat) 50
     , clicked = False
     , dragging = False
@@ -150,7 +152,21 @@ updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
 updateMakeACake msg model =
     case msg of
         MoveBowl time ->
-            ( { model | bowl = Bowl.step time model.bowl }, Cmd.none )
+            let
+                inBowl opt =
+                    let
+                        ( x2, y2 ) =
+                            ( (getX opt.position) + 1, (getY opt.position) + 1 )
+
+                        optBox =
+                            fromCorners (opt.position) (vec2 x2 y2)
+                    in
+                        { opt | inBowl = Bowl.inside optBox model.bowl }
+
+                cakeOptions =
+                    Zipper.mapCurrent inBowl model.cakeOptions
+            in
+                ( { model | bowl = Bowl.step time model.bowl, cakeOptions = cakeOptions }, Cmd.none )
 
         TreadmillMsg msg ->
             let
@@ -185,9 +201,6 @@ updateMakeACake msg model =
                     else
                         opt
 
-                bbox =
-                    Bowl.boundingBoxFromBowl model.bowl
-
                 inBowl opt =
                     let
                         ( x2, y2 ) =
@@ -211,9 +224,6 @@ updateMakeACake msg model =
                 bowl =
                     model.bowl
 
-                bbox =
-                    Bowl.boundingBoxFromBowl bowl
-
                 currentOption =
                     Zipper.current model.cakeOptions
 
@@ -221,6 +231,10 @@ updateMakeACake msg model =
                     if currentOption.cakeIngredient && currentOption.inBowl then
                         ( { bowl | items = currentOption.item :: bowl.items }
                         , Zipper.delete model.cakeOptions |> Maybe.withDefault model.cakeOptions
+                        )
+                    else if not currentOption.cakeIngredient && currentOption.inBowl then
+                        ( bowl
+                        , Zipper.mapCurrent (\opt -> initCakeOption opt.id opt.item) model.cakeOptions
                         )
                     else
                         ( bowl
