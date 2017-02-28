@@ -43,6 +43,7 @@ type alias Model =
     , game : Game
     , bowl : Bowl.Model Msg
     , cakeOptions : Zipper CakeOption
+    , win : Bool
     }
 
 
@@ -74,6 +75,7 @@ init =
       , level = 1
       , bowl = Bowl.init 1000
       , game = SplashScreen
+      , win = False
       , cakeOptions =
             Item.initItems
                 |> Zipper.indexedMap initCakeOption
@@ -232,16 +234,15 @@ updateMakeACake msg model =
                         ( { bowl | items = currentOption.item :: bowl.items }
                         , Zipper.delete model.cakeOptions |> Maybe.withDefault model.cakeOptions
                         )
-                    else if not currentOption.cakeIngredient && currentOption.inBowl then
+                    else
                         ( bowl
                         , Zipper.mapCurrent (\opt -> initCakeOption opt.id opt.item) model.cakeOptions
                         )
-                    else
-                        ( bowl
-                        , Zipper.mapCurrent (\opt -> { opt | dragging = False }) model.cakeOptions
-                        )
+
+                win =
+                    Bowl.full newBowl
             in
-                ( { model | cakeOptions = newOptions, bowl = newBowl }, Cmd.none )
+                ( { model | cakeOptions = newOptions, bowl = newBowl, win = win }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -340,6 +341,36 @@ addItem model =
 -- VIEW
 
 
+winPopup : Bool -> List (Html Msg)
+winPopup win =
+    if win then
+        [ Html.div
+            [ style
+                [ ( "position", "relative" )
+                , ( "width", "60%" )
+                , ( "height", "200px" )
+                , ( "margin", "0 auto" )
+                , ( "padding", "20px" )
+                , ( "resize", "both" )
+                ]
+            ]
+            [ Html.div
+                [ style
+                    [ ( "position", "absolute" )
+                    , ( "background", "lightblue" )
+                    , ( "border", "5px solid black" )
+                    , ( "padding", "50px" )
+                    , ( "top", "50%" )
+                    , ( "left", "50%" )
+                    ]
+                ]
+                [ Html.text "CONGRATULATIONS!!! YOU WIN!!!" ]
+            ]
+        ]
+    else
+        []
+
+
 view : Model -> Html Msg
 view model =
     case model.game of
@@ -349,13 +380,15 @@ view model =
         MakeACake ->
             Html.div
                 []
-                [ Html.span
+                ([ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
-                , cakeWords model
-                , Bowl.view model.bowl
-                , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
-                ]
+                 , cakeWords model
+                 , Bowl.view model.bowl
+                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
+                 ]
+                    ++ (winPopup model.win)
+                )
 
         ClassicTreadmill ->
             Html.div
@@ -512,7 +545,9 @@ subscriptions model =
             Window.resizes Resize
 
         MakeACake ->
-            if Bowl.done model.bowl then
+            if model.win then
+                Window.resizes Resize
+            else if Bowl.done model.bowl then
                 Sub.batch
                     [ Window.resizes Resize
                     , Mouse.moves DragAt

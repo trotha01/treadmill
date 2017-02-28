@@ -8,6 +8,7 @@ module Zipper
         , appendList
         , appendItem
         , delete
+        , length
         , before
         , current
         , after
@@ -36,6 +37,9 @@ module Zipper
 
 # Destructing a `Zipper`
 @docs delete
+
+# Attributes
+@docs length
 
 # Accessors
 @docs before, current, after, toList
@@ -119,6 +123,11 @@ delete (Zipper ls x rs) =
 
                 ls ->
                     Nothing
+
+
+length : Zipper a -> Int
+length (Zipper ls x rs) =
+    (List.length ls) + 1 + (List.length rs)
 
 
 {-| Returns all elements before the element the `Zipper` is focussed on.

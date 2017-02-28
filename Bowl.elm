@@ -62,6 +62,11 @@ inside box bowl =
     BoundingBox.inside box (boundingBoxFromBowl bowl)
 
 
+full : Model msg -> Bool
+full model =
+    (List.length model.items) == 2
+
+
 
 -- UPDATE
 
