@@ -341,36 +341,6 @@ addItem model =
 -- VIEW
 
 
-winPopup : Bool -> List (Html Msg)
-winPopup win =
-    if win then
-        [ Html.div
-            [ style
-                [ ( "position", "relative" )
-                , ( "width", "60%" )
-                , ( "height", "200px" )
-                , ( "margin", "0 auto" )
-                , ( "padding", "20px" )
-                , ( "resize", "both" )
-                ]
-            ]
-            [ Html.div
-                [ style
-                    [ ( "position", "absolute" )
-                    , ( "background", "lightblue" )
-                    , ( "border", "5px solid black" )
-                    , ( "padding", "50px" )
-                    , ( "top", "50%" )
-                    , ( "left", "50%" )
-                    ]
-                ]
-                [ Html.text "CONGRATULATIONS!!! YOU WIN!!!" ]
-            ]
-        ]
-    else
-        []
-
-
 view : Model -> Html Msg
 view model =
     case model.game of
@@ -383,11 +353,12 @@ view model =
                 ([ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
+                 , viewDistance model
                  , cakeWords model
                  , Bowl.view model.bowl
                  , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                  ]
-                    ++ (winPopup model.win)
+                    ++ (winPopup model)
                 )
 
         ClassicTreadmill ->
@@ -400,6 +371,38 @@ view model =
                 , notice model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
+
+
+viewDistance : Model -> Html Msg
+viewDistance model =
+    Html.div [] [ Html.text <| (Bowl.distance model.bowl) ++ " feet" ]
+
+
+winPopup : Model -> List (Html Msg)
+winPopup model =
+    if model.win then
+        [ Html.div
+            [ style
+                [ ( "display", "flex" )
+                , ( "justify-content", "center" )
+                , ( "align-items", "center" )
+                ]
+            ]
+            [ Html.div
+                [ style
+                    [ ( "background", "#d5dfff" )
+                    , ( "border", "5px solid black" )
+                    , ( "width", "280px" )
+                    , ( "height", "60px" )
+                    , ( "padding", "25px" )
+                    , ( "z-index", "100" )
+                    ]
+                ]
+                [ Html.text <| "CONGRATULATIONS!!! YOU MADE A CAKE IN " ++ (Bowl.distance model.bowl) ++ " FEET!!!" ]
+            ]
+        ]
+    else
+        []
 
 
 onMouseDown : String -> Html.Attribute Msg

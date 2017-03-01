@@ -7,6 +7,7 @@ import Html.Events exposing (..)
 import Item
 import Math.Vector2 as Vector2 exposing (Vec2, getX, getY, vec2)
 import Time exposing (Time)
+import Round
 import Zipper
 
 
@@ -18,6 +19,7 @@ import Zipper
 type alias Model msg =
     { x : Float
     , items : List (Item.Model msg)
+    , start : Float
     }
 
 
@@ -25,6 +27,7 @@ init : Float -> Model msg
 init x =
     { x = x
     , items = []
+    , start = x
     }
 
 
@@ -41,6 +44,11 @@ init x =
 done : Model msg -> Bool
 done bowl =
     bowl.x == 0
+
+
+distance : Model msg -> String
+distance bowl =
+    Round.round 2 <| (bowl.start - bowl.x) / 24
 
 
 boundingBoxFromBowl : Model msg -> BoundingBox
