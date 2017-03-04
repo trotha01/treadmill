@@ -28,6 +28,7 @@ import Zipper as Zipper exposing (..)
 -}
 {-
    sound from: http://www.pacdv.com/sounds/interface_sounds-2.html
+   images from: https://pixabay.com/
 -}
 -- MODEL
 
@@ -92,7 +93,11 @@ initCakeOption i item =
     , clicked = False
     , dragging = False
     , inBowl = False
-    , cakeIngredient = (item.word == "leche") || (item.word == "café")
+    , cakeIngredient =
+        (item.word == "leche")
+            || (item.word == "huevo")
+            || (item.word == "harina")
+            || (item.word == "azúcar")
     }
 
 
@@ -413,7 +418,7 @@ onMouseDown word =
 cakeWordStyle : Vec2 -> Html.Attribute Msg
 cakeWordStyle pos =
     style
-        [ ( "background-color", "lightblue" )
+        [ ( "background-color", "#b6ff69" )
         , ( "position", "absolute" )
         , ( "left", (getX pos |> toString) ++ "px" )
         , ( "top", ((getY pos |> toString) ++ "px") )

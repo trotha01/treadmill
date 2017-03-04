@@ -34,7 +34,7 @@ init x =
 {-| Constants for the bowl
 -}
 ( y, bowlWidth, bowlHeight ) =
-    ( 300, 100, 100 )
+    ( 300, 200, 150 )
 
 
 
@@ -72,7 +72,7 @@ inside box bowl =
 
 full : Model msg -> Bool
 full model =
-    (List.length model.items) == 2
+    (List.length model.items) == 4
 
 
 
@@ -95,12 +95,29 @@ step time bowl =
 view : Model msg -> Html msg
 view model =
     Html.div [ bowlStyle model.x ]
+        [ viewBowlTop
+        , viewBowlBottom
+        , viewItems model
+        ]
+
+
+viewBowlTop =
+    Html.div []
         [ Html.img
-            [ bowlImgStyle
-            , src "imgs/cake-bowl.png"
+            [ bowlTopImgStyle
+            , src "imgs/cake-bowl-top.png"
             ]
             []
-        , viewItems model
+        ]
+
+
+viewBowlBottom =
+    Html.div []
+        [ Html.img
+            [ bowlImgStyle
+            , src "imgs/cake-bowl-bottom.png"
+            ]
+            []
         ]
 
 
@@ -127,11 +144,22 @@ viewItem x i item =
             []
 
 
+bowlTopImgStyle : Html.Attribute msg
+bowlTopImgStyle =
+    style
+        [ ( "width", (toString bowlWidth) ++ "px" )
+        , ( "height", "50px" )
+        , ( "top", "-50px" )
+        , ( "left", "0px" )
+        , ( "position", "absolute" )
+        ]
+
+
 bowlImgStyle : Html.Attribute msg
 bowlImgStyle =
     style
         [ ( "width", (toString bowlWidth) ++ "px" )
-        , ( "height", (toString bowlHeight) ++ "px" )
+        , ( "height", "100px" )
         , ( "left", "0px" )
         , ( "position", "absolute" )
         ]

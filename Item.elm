@@ -36,6 +36,9 @@ initItems =
         [ (initItem "café" "imgs/coffee.png" [])
         , (initItem "silla" "imgs/chair-antique.png" [ "imgs/design-chair.jpg" ])
         , (initItem "mesa" "imgs/table.png" [ "imgs/folding-table.png" ])
+        , (initItem "huevo" "imgs/egg.png" [])
+        , (initItem "harina" "imgs/flour.png" [])
+        , (initItem "azúcar" "imgs/sugar.png" [])
         ]
 
 
