@@ -36,6 +36,9 @@ initItems =
         [ (initItem "café" "imgs/coffee.png" [])
         , (initItem "silla" "imgs/chair-antique.png" [ "imgs/design-chair.jpg" ])
         , (initItem "mesa" "imgs/table.png" [ "imgs/folding-table.png" ])
+        , (initItem "huevo" "imgs/egg.png" [])
+        , (initItem "harina" "imgs/flour.png" [])
+        , (initItem "azúcar" "imgs/sugar.png" [])
         ]
 
 
@@ -88,7 +91,7 @@ startImgAnimation doneMsg start end img =
                     [ Animation.left (px <| toFloat start)
                     , Animation.display Animation.block
                     ]
-                , Animation.toWith (Animation.easing { duration = Time.second * 4, ease = Ease.linear })
+                , Animation.toWith (Animation.easing { duration = Time.second * 7, ease = Ease.linear })
                     [ Animation.left (px <| toFloat end)
                     ]
                 , Animation.Messenger.send (doneMsg img)

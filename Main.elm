@@ -1,9 +1,15 @@
 module Main exposing (..)
 
+import AnimationFrame
+import BoundingBox exposing (fromCorners, inside)
+import Bowl
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Item
+import Json.Decode as Decode
+import Math.Vector2 as Vector2 exposing (Vec2, getX, getY, vec2)
+import Mouse
 import Random exposing (Generator)
 import Task
 import Time
@@ -22,6 +28,7 @@ import Zipper as Zipper exposing (..)
 -}
 {-
    sound from: http://www.pacdv.com/sounds/interface_sounds-2.html
+   images from: https://pixabay.com/
 -}
 -- MODEL
 
@@ -35,18 +42,27 @@ type alias Model =
     , notice : String
     , level : Int
     , game : Game
+    , bowl : Bowl.Model Msg
+    , cakeOptions : Zipper CakeOption
+    , win : Bool
+    }
+
+
+type alias CakeOption =
+    { item : Item.Model Msg
+    , id : Int
+    , position : Vec2
+    , clicked : Bool
+    , dragging : Bool
+    , inBowl : Bool
+    , cakeIngredient : Bool
     }
 
 
 type Game
     = SplashScreen
     | ClassicTreadmill
-    | MakeACake Status
-
-
-type Status
-    = Starting
-    | Running
+    | MakeACake
 
 
 init : ( Model, Cmd Msg )
@@ -58,10 +74,31 @@ init =
       , points = 0
       , notice = ""
       , level = 1
+      , bowl = Bowl.init 1000
       , game = SplashScreen
+      , win = False
+      , cakeOptions =
+            Item.initItems
+                |> Zipper.indexedMap initCakeOption
       }
     , Task.perform Resize (Window.size)
     )
+
+
+initCakeOption : Int -> Item.Model Msg -> CakeOption
+initCakeOption i item =
+    { item = item
+    , id = i
+    , position = vec2 (i * 75 |> toFloat) 50
+    , clicked = False
+    , dragging = False
+    , inBowl = False
+    , cakeIngredient =
+        (item.word == "leche")
+            || (item.word == "huevo")
+            || (item.word == "harina")
+            || (item.word == "azúcar")
+    }
 
 
 
@@ -77,6 +114,10 @@ type Msg
     | NewWord Time.Time
     | ItemClicked Int (Item.Model Msg)
     | ItemTouched Int (Item.Model Msg) Touch
+    | DragStart String Mouse.Position
+    | DragAt Mouse.Position
+    | DragEnd Mouse.Position
+    | MoveBowl Time.Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -90,10 +131,7 @@ update msg model =
                 SplashScreen ->
                     updateSplashScreen msg model
 
-                MakeACake Starting ->
-                    startMakeACake msg model
-
-                MakeACake Running ->
+                MakeACake ->
                     updateMakeACake msg model
 
                 ClassicTreadmill ->
@@ -104,7 +142,7 @@ updateSplashScreen : Msg -> Model -> ( Model, Cmd Msg )
 updateSplashScreen msg model =
     case msg of
         Start ->
-            ( { model | game = ClassicTreadmill }, Cmd.none )
+            ( { model | game = MakeACake }, Cmd.none )
 
         TreadmillMsg msg ->
             let
@@ -117,14 +155,26 @@ updateSplashScreen msg model =
             ( model, Cmd.none )
 
 
-startMakeACake : Msg -> Model -> ( Model, Cmd Msg )
-startMakeACake msg model =
-    ( addBowl model, Cmd.none )
-
-
 updateMakeACake : Msg -> Model -> ( Model, Cmd Msg )
 updateMakeACake msg model =
     case msg of
+        MoveBowl time ->
+            let
+                inBowl opt =
+                    let
+                        ( x2, y2 ) =
+                            ( (getX opt.position) + 1, (getY opt.position) + 1 )
+
+                        optBox =
+                            fromCorners (opt.position) (vec2 x2 y2)
+                    in
+                        { opt | inBowl = Bowl.inside optBox model.bowl }
+
+                cakeOptions =
+                    Zipper.mapCurrent inBowl model.cakeOptions
+            in
+                ( { model | bowl = Bowl.step time model.bowl, cakeOptions = cakeOptions }, Cmd.none )
+
         TreadmillMsg msg ->
             let
                 ( newTreadmill, cmd ) =
@@ -137,6 +187,67 @@ updateMakeACake msg model =
 
         Done id img ->
             ( { model | treadmill = Treadmill.removeItem id model.treadmill }, Cmd.none )
+
+        DragStart word pos ->
+            let
+                cakeOptions =
+                    (Maybe.withDefault model.cakeOptions
+                        (Zipper.first model.cakeOptions
+                            |> Zipper.find (\option -> option.item.word == word)
+                        )
+                    )
+                        |> Zipper.mapCurrent (\option -> { option | dragging = True })
+            in
+                ( { model | cakeOptions = cakeOptions }, Cmd.none )
+
+        DragAt pos ->
+            let
+                dragOption opt =
+                    if opt.dragging then
+                        { opt | position = vec2 (toFloat pos.x) (toFloat pos.y) }
+                    else
+                        opt
+
+                inBowl opt =
+                    let
+                        ( x2, y2 ) =
+                            ( (getX opt.position) + 1, (getY opt.position) + 1 )
+
+                        optBox =
+                            fromCorners (opt.position) (vec2 x2 y2)
+                    in
+                        { opt | inBowl = Bowl.inside optBox model.bowl }
+
+                cakeOptions =
+                    Zipper.mapCurrent dragOption model.cakeOptions
+
+                cakeOptions2 =
+                    Zipper.mapCurrent inBowl cakeOptions
+            in
+                ( { model | cakeOptions = cakeOptions2 }, Cmd.none )
+
+        DragEnd pos ->
+            let
+                bowl =
+                    model.bowl
+
+                currentOption =
+                    Zipper.current model.cakeOptions
+
+                ( newBowl, newOptions ) =
+                    if currentOption.cakeIngredient && currentOption.inBowl then
+                        ( { bowl | items = currentOption.item :: bowl.items }
+                        , Zipper.delete model.cakeOptions |> Maybe.withDefault model.cakeOptions
+                        )
+                    else
+                        ( bowl
+                        , Zipper.mapCurrent (\opt -> initCakeOption opt.id opt.item) model.cakeOptions
+                        )
+
+                win =
+                    Bowl.full newBowl
+            in
+                ( { model | cakeOptions = newOptions, bowl = newBowl, win = win }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -214,11 +325,6 @@ nextWord model =
     }
 
 
-addBowl : Model -> Model
-addBowl model =
-    { model | game = MakeACake Running, treadmill = Treadmill.addItem model.windowSize.width Done model.treadmill Item.bowl }
-
-
 addItem : Model -> Model
 addItem model =
     let
@@ -246,14 +352,19 @@ view model =
         SplashScreen ->
             splashScreenView model
 
-        MakeACake _ ->
+        MakeACake ->
             Html.div
                 []
-                [ Html.span
+                ([ Html.span
                     [ style [ ( "text-align", "right" ), ( "padding", "50px" ) ] ]
                     [ pointsView model ]
-                , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
-                ]
+                 , viewDistance model
+                 , cakeWords model
+                 , Bowl.view model.bowl
+                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
+                 ]
+                    ++ (winPopup model)
+                )
 
         ClassicTreadmill ->
             Html.div
@@ -265,6 +376,104 @@ view model =
                 , notice model
                 , Treadmill.view model.windowSize.width ItemClicked ItemTouched model.treadmill
                 ]
+
+
+viewDistance : Model -> Html Msg
+viewDistance model =
+    Html.div [] [ Html.text <| (Bowl.distance model.bowl) ++ " feet" ]
+
+
+winPopup : Model -> List (Html Msg)
+winPopup model =
+    if model.win then
+        [ Html.div
+            [ style
+                [ ( "display", "flex" )
+                , ( "justify-content", "center" )
+                , ( "align-items", "center" )
+                ]
+            ]
+            [ Html.div
+                [ style
+                    [ ( "background", "#d5dfff" )
+                    , ( "border", "5px solid black" )
+                    , ( "width", "280px" )
+                    , ( "height", "60px" )
+                    , ( "padding", "25px" )
+                    , ( "z-index", "100" )
+                    ]
+                ]
+                [ Html.text <| "CONGRATULATIONS!!! YOU MADE A CAKE IN " ++ (Bowl.distance model.bowl) ++ " FEET!!!" ]
+            ]
+        ]
+    else
+        []
+
+
+onMouseDown : String -> Html.Attribute Msg
+onMouseDown word =
+    on "mousedown" (Decode.map (DragStart word) Mouse.position)
+
+
+cakeWordStyle : Vec2 -> Html.Attribute Msg
+cakeWordStyle pos =
+    style
+        [ ( "background-color", "#b6ff69" )
+        , ( "position", "absolute" )
+        , ( "left", (getX pos |> toString) ++ "px" )
+        , ( "top", ((getY pos |> toString) ++ "px") )
+        , ( "width", "75px" )
+        , ( "height", "75px" )
+        , ( "border", "2px solid black" )
+        , ( "text-align", "center" )
+        , ( "vertical-align", "middle" )
+        , ( "cursor", "pointer" )
+        , ( "user-select", "none" )
+        ]
+
+
+cakeImgStyle : Vec2 -> Html.Attribute Msg
+cakeImgStyle pos =
+    style
+        [ ( "position", "absolute" )
+        , ( "left", (getX pos |> toString) ++ "px" )
+        , ( "top", ((getY pos |> toString) ++ "px") )
+        , ( "width", "75px" )
+        , ( "height", "75px" )
+        , ( "text-align", "center" )
+        , ( "vertical-align", "middle" )
+        , ( "cursor", "pointer" )
+        , ( "user-select", "none" )
+        ]
+
+
+cakeWords : Model -> Html Msg
+cakeWords model =
+    Html.div []
+        (Zipper.toList model.cakeOptions
+            |> List.map cakeWord
+        )
+
+
+cakeWord : CakeOption -> Html Msg
+cakeWord cakeOption =
+    if cakeOption.inBowl then
+        Html.div
+            [ cakeImgStyle cakeOption.position
+            , onMouseDown cakeOption.item.word
+            ]
+            [ Html.img
+                [ style [ ( "width", "75px" ), ( "height", "75px" ) ]
+                , src (cakeOption.item.imgs |> Zipper.current |> .src)
+                ]
+                []
+            ]
+    else
+        Html.div
+            [ cakeWordStyle cakeOption.position
+            , onMouseDown cakeOption.item.word
+            ]
+            [ Html.span [] [ Html.text cakeOption.item.word ] ]
 
 
 splashScreenView : Model -> Html Msg
@@ -343,11 +552,22 @@ subscriptions model =
         SplashScreen ->
             Window.resizes Resize
 
-        MakeACake _ ->
-            Sub.batch
-                [ Treadmill.subscription TreadmillMsg model.treadmill
-                , Window.resizes Resize
-                ]
+        MakeACake ->
+            if model.win then
+                Window.resizes Resize
+            else if Bowl.done model.bowl then
+                Sub.batch
+                    [ Window.resizes Resize
+                    , Mouse.moves DragAt
+                    , Mouse.ups DragEnd
+                    ]
+            else
+                Sub.batch
+                    [ Window.resizes Resize
+                    , Mouse.moves DragAt
+                    , Mouse.ups DragEnd
+                    , AnimationFrame.diffs MoveBowl
+                    ]
 
         _ ->
             Sub.batch

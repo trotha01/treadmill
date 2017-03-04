@@ -7,6 +7,8 @@ module Zipper
         , withDefault
         , appendList
         , appendItem
+        , delete
+        , length
         , before
         , current
         , after
@@ -32,6 +34,12 @@ module Zipper
 
 # Constructing a `Zipper`
 @docs singleton, fromList, fromListWithFocus, withDefault, appendItem, appendList
+
+# Destructing a `Zipper`
+@docs delete
+
+# Attributes
+@docs length
 
 # Accessors
 @docs before, current, after, toList
@@ -98,6 +106,28 @@ appendItem y (Zipper ls x rs) =
 appendList : List a -> Zipper a -> Zipper a
 appendList xs (Zipper ls x rs) =
     Zipper ls x (rs ++ xs)
+
+
+{-| Delete the current item, move cursor right
+-}
+delete : Zipper a -> Maybe (Zipper a)
+delete (Zipper ls x rs) =
+    case rs of
+        r :: rs ->
+            Just <| Zipper ls r rs
+
+        rs ->
+            case ls of
+                l :: ls ->
+                    Just <| Zipper ls l rs
+
+                ls ->
+                    Nothing
+
+
+length : Zipper a -> Int
+length (Zipper ls x rs) =
+    (List.length ls) + 1 + (List.length rs)
 
 
 {-| Returns all elements before the element the `Zipper` is focussed on.
