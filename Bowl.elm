@@ -33,8 +33,8 @@ init x =
 
 {-| Constants for the bowl
 -}
-( y, bowlWidth, bowlHeight ) =
-    ( 300, 200, 150 )
+( y, bowlWidth, bowlTopHeight, bowlTotalHeight ) =
+    ( 245, 200, 50, 150 )
 
 
 
@@ -53,7 +53,7 @@ distance bowl =
 
 boundingBoxFromBowl : Model msg -> BoundingBox
 boundingBoxFromBowl bowl =
-    BoundingBox.fromCorners (vec2 bowl.x y) (vec2 (bowl.x + bowlWidth) (y + bowlHeight))
+    BoundingBox.fromCorners (vec2 bowl.x y) (vec2 (bowl.x + bowlWidth) (y + bowlTotalHeight))
 
 
 {-| contains checks if the point is inside the bowl
@@ -67,7 +67,7 @@ contains point bowl =
 -}
 inside : BoundingBox -> Model msg -> Bool
 inside box bowl =
-    BoundingBox.inside box (boundingBoxFromBowl bowl)
+    BoundingBox.intersects (boundingBoxFromBowl bowl) box
 
 
 full : Model msg -> Bool
@@ -139,6 +139,7 @@ viewItem x i item =
             , style
                 [ ( "position", "absolute" )
                 , ( "left", (i * 50 |> toString) ++ "px" )
+                , ( "top", "20px" )
                 ]
             ]
             []
@@ -148,10 +149,10 @@ bowlTopImgStyle : Html.Attribute msg
 bowlTopImgStyle =
     style
         [ ( "width", (toString bowlWidth) ++ "px" )
-        , ( "height", "50px" )
-        , ( "top", "-50px" )
+        , ( "height", (toString bowlTopHeight) ++ "px" )
+        , ( "top", "5px" )
         , ( "left", "0px" )
-        , ( "position", "absolute" )
+        , ( "position", "relative" )
         ]
 
 
@@ -161,7 +162,8 @@ bowlImgStyle =
         [ ( "width", (toString bowlWidth) ++ "px" )
         , ( "height", "100px" )
         , ( "left", "0px" )
-        , ( "position", "absolute" )
+        , ( "top", "0px" )
+        , ( "position", "relative" )
         ]
 
 
@@ -172,7 +174,7 @@ bowlStyle x =
         , ( "left", (toString x) ++ "px" )
         , ( "top", (toString y) ++ "px" )
         , ( "width", (toString bowlWidth) ++ "px" )
-        , ( "height", (toString bowlHeight) ++ "px" )
+        , ( "height", (toString bowlTotalHeight) ++ "px" )
         , ( "text-align", "center" )
         , ( "vertical-align", "middle" )
         , ( "cursor", "pointer" )

@@ -107,7 +107,7 @@ initCakeOption i item =
 
 type Msg
     = TreadmillMsg Treadmill.Msg
-    | Start
+    | Start Game
     | Done Int (Item.Img Msg)
     | Resize Window.Size
     | Tick Time.Time
@@ -141,8 +141,8 @@ update msg model =
 updateSplashScreen : Msg -> Model -> ( Model, Cmd Msg )
 updateSplashScreen msg model =
     case msg of
-        Start ->
-            ( { model | game = MakeACake }, Cmd.none )
+        Start game ->
+            ( { model | game = game }, Cmd.none )
 
         TreadmillMsg msg ->
             let
@@ -163,7 +163,7 @@ updateMakeACake msg model =
                 inBowl opt =
                     let
                         ( x2, y2 ) =
-                            ( (getX opt.position) + 1, (getY opt.position) + 1 )
+                            ( (getX opt.position) + 75, (getY opt.position) + 75 )
 
                         optBox =
                             fromCorners (opt.position) (vec2 x2 y2)
@@ -211,7 +211,7 @@ updateMakeACake msg model =
                 inBowl opt =
                     let
                         ( x2, y2 ) =
-                            ( (getX opt.position) + 1, (getY opt.position) + 1 )
+                            ( (getX opt.position) + 75, (getY opt.position) + 75 )
 
                         optBox =
                             fromCorners (opt.position) (vec2 x2 y2)
@@ -256,7 +256,7 @@ updateMakeACake msg model =
 updateClassicGame : Msg -> Model -> ( Model, Cmd Msg )
 updateClassicGame msg model =
     case msg of
-        Start ->
+        Start _ ->
             ( model, Cmd.none )
 
         NewWord _ ->
@@ -497,7 +497,7 @@ splashScreenView model =
             ([ Html.h1 [] [ Html.text ("Level " ++ (toString model.level)) ]
              ]
                 ++ points
-                ++ [ startButton ]
+                ++ [ startCakeButton, startTreadmillButton ]
             )
 
 
@@ -536,10 +536,16 @@ buttonStyle =
         ]
 
 
-startButton : Html Msg
-startButton =
-    Html.div [ onClick Start ]
-        [ Html.button [ buttonStyle, onClick Start ] [ Html.text "Start" ] ]
+startCakeButton : Html Msg
+startCakeButton =
+    Html.div [ onClick (Start MakeACake) ]
+        [ Html.button [ buttonStyle, onClick (Start MakeACake) ] [ Html.text "Make A Cake" ] ]
+
+
+startTreadmillButton : Html Msg
+startTreadmillButton =
+    Html.div [ onClick (Start ClassicTreadmill) ]
+        [ Html.button [ buttonStyle, onClick (Start ClassicTreadmill) ] [ Html.text "Treadmill" ] ]
 
 
 
