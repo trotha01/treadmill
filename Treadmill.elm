@@ -2,26 +2,26 @@ module Treadmill exposing (..)
 
 import Animation exposing (px)
 import Animation.Messenger
-import Item
+import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (..)
-import Html.Events exposing (..)
+import Item
 import Svg exposing (Svg, svg)
-import Svg.Attributes exposing (fill, x, y, rx, ry)
+import Svg.Attributes exposing (fill, rx, ry, x, y)
+import Time exposing (..)
 import TouchEvents as Touch exposing (..)
-import Zipper as Zipper exposing (..)
 
 
 -- MODEL
 
 
-type alias Belt msg =
+type alias Belt =
     { length : Int
-    , items : List ( Int, Item.Model msg )
+    , items : List ( Int, Item.Model )
     }
 
 
-init : Belt msg
+init : Belt
 init =
     { length = 0
     , items = []
@@ -33,34 +33,54 @@ init =
 
 
 type Msg
-    = Animate Animation.Msg
+    = -- Animate Animation.Msg
+      Tick Time.Time
 
 
-update : Msg -> Belt msg -> ( Belt msg, Cmd msg )
+update : Msg -> Belt -> ( Belt, Cmd msg )
 update msg belt =
     case msg of
+        Tick delta ->
+            ( animate delta belt, Cmd.none )
+
+
+
+{--
         Animate animMsg ->
             animate animMsg belt
+            --}
 
 
-addItem : Int -> (Int -> Item.Img msg -> msg) -> Belt msg -> Item.Model msg -> Belt msg
+addItem : Int -> (Int -> Item.Img -> msg) -> Belt -> Item.Model -> Belt
 addItem windowWidth done belt item =
     let
         newID =
             belt.length
 
         animatedItem =
-            (Item.startItemAnimation (done newID) windowWidth -100) item
+            -- (Item.startItemAnimation (done newID) windowWidth -100) item
+            item
     in
-        { belt | items = ( newID, animatedItem ) :: belt.items, length = belt.length + 1 }
+    { belt | items = ( newID, animatedItem ) :: belt.items, length = belt.length + 1 }
 
 
-removeItem : Int -> Belt msg -> Belt msg
+removeItem : Int -> Belt -> Belt
 removeItem id belt =
     { belt | items = List.filter (\( itemID, _ ) -> itemID /= id) belt.items }
 
 
-animate : Animation.Msg -> Belt msg -> ( Belt msg, Cmd msg )
+animate : Time.Time -> Belt -> Belt
+animate delta belt =
+    let
+        movedItems =
+            List.map (\( id, item ) -> ( id, Item.move delta item )) belt.items
+    in
+    { belt | items = movedItems }
+
+
+
+{--
+animate : Animation.Msg -> Belt -> ( Belt, Cmd msg )
 animate msg belt =
     let
         idsItemsCmds =
@@ -76,49 +96,46 @@ animate msg belt =
             zip ids items
     in
         ( { belt | items = newItems }, Cmd.batch cmds )
-
-
-
+-}
 -- VIEW
 
 
 type alias ClickMsg msg =
-    Int -> Item.Model msg -> msg
+    Int -> Item.Model -> msg
 
 
 type alias TouchMsg msg =
-    Int -> Item.Model msg -> Touch -> msg
+    Int -> Item.Model -> Touch -> msg
 
 
-view : Int -> ClickMsg msg -> TouchMsg msg -> Belt msg -> Html msg
+view : Int -> ClickMsg msg -> TouchMsg msg -> Belt -> Html msg
 view windowWidth clickMsg touchMsg belt =
     let
         items =
-            (belt.items
+            belt.items
                 |> List.map (\( id, item ) -> Item.viewItem (clickMsg id) (touchMsg id) item)
-            )
 
         viewBelt =
             svg
                 [ style
                     [ ( "position", "absolute" )
                     , ( "top", "100px" )
-                    , ( "width", (toString windowWidth) ++ "px" )
+                    , ( "width", toString windowWidth ++ "px" )
                     , ( "left", "0px" )
                     ]
                 ]
                 [ Svg.rect [ fill "black", x "0", y "0", rx "3", ry "3", Svg.Attributes.width "100%", Svg.Attributes.height "4" ] [] ]
     in
-        Html.div
-            [ style
-                [ ( "position", "absolute" )
-                , ( "overflow", "hidden" )
-                , ( "top", "300px" )
-                , ( "height", "110px" )
-                , ( "width", (toString windowWidth) ++ "px" )
-                ]
+    Html.div
+        [ style
+            [ ( "position", "absolute" )
+            , ( "overflow", "hidden" )
+            , ( "top", "300px" )
+            , ( "height", "110px" )
+            , ( "width", toString windowWidth ++ "px" )
             ]
-            (viewBelt :: items)
+        ]
+        (viewBelt :: items)
 
 
 
@@ -127,27 +144,35 @@ view windowWidth clickMsg touchMsg belt =
 
 {-| TODO: move these to Item module?
 -}
-imgStyles : Zipper (Item.Img msg) -> List (Animation.Messenger.State msg)
+
+
+
+{--
+imgStyles : Zipper (Item.Img) -> List (Animation.Messenger.State msg)
 imgStyles imgs =
     imgs
         |> Zipper.map .style
         |> Zipper.toList
 
 
-itemStyles : List ( Int, Item.Model msg ) -> List (Animation.Messenger.State msg)
+itemStyles : List ( Int, Item.Model ) -> List (Animation.Messenger.State msg)
 itemStyles items =
     items
         |> List.map (Tuple.second >> .imgs >> imgStyles)
         |> List.concat
+        --}
 
 
-subscription : (Msg -> msg) -> Belt msg -> Sub msg
+subscription : (Msg -> msg) -> Belt -> Sub msg
 subscription msg belt =
+    AnimationFrame.diffs (Tick >> msg)
+
+
+
+{--
     Animation.subscription (Animate >> msg)
         (itemStyles belt.items)
-
-
-
+        --}
 -- HELPERS
 
 

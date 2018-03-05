@@ -1,0 +1,114 @@
+/* BASE */
+*,
+*::after,
+*::before {
+    margin: 0;
+    padding: 0;
+    box-sizing: inherit;
+}
+
+html {
+  /* This defines 1rem (default 10px) */
+  font-size: 62.5%;
+  font-family: Helvetica, sans-serif;
+}
+
+h1 {
+    text-transform: uppercase;
+    text-shadow: 1px 1px purple;
+    color: lightgrey;
+    padding: 4rem;
+    font-size: 3.3rem;
+    letter-spacing: .3rem;
+    font-weight: 200;
+}
+
+h4 {
+    text-align: center;
+}
+
+.button {
+    border: .1rem solid black;
+    border-radius: .5rem;
+    box-shadow: 1rem 1rem 2rem grey;
+    background-color: purple;
+    margin: 1rem;
+    height: 5rem;
+    width: 20rem;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: 0.5s;
+}
+
+button:hover {
+    background-color: lightpink;
+    transform: scale(1.01);
+}
+
+button:active {
+    box-shadow: 0.5rem 0.5rem 1rem grey;
+    transform: scale(.96);
+}
+
+/* SPLASH SCREEN */
+.splashscreen-wrap {
+    /* border: .4rem solid purple;*/
+    /* background-color: #6fa8bb;*/
+    background-color: slategray;
+    text-align: center;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* POINTS */
+.gameinfo-item {
+    color: purple;
+    font-size: 1.8rem;
+    margin: 1rem;
+    padding: 1rem;
+    display: block;
+    text-align: right;
+}
+
+/* TREADMILL GAME */
+.treadmill-item {
+    border-radius: 1rem;
+}
+
+.treadmill-notice {
+    color: green;
+    text-align: center;
+    font-size: 1.6rem;
+}
+
+/* CAKE BOWL GAME */
+.distance {
+    text-align: right;
+    color: deeppink;
+    font-size: 1.5rem;
+
+}
+
+.bowl-item {
+    display: inline-block;
+    height: 5rem;
+    width: 7rem;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    transition: 0s;
+}
+
+.win-frame {
+    background-color: ghostwhite;
+    border: .5rem solid purple;
+    width: 33.3rem;
+    height: 7rem;
+    padding: 2.5rem;
+    z-index: 100;
+    color: purple;
+    font-size: 20px;
+    text-align: center;
+}

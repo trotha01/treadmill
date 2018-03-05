@@ -1,53 +1,67 @@
 module Zipper
     exposing
         ( Zipper(..)
-        , singleton
-        , fromList
-        , fromListWithFocus
-        , withDefault
-        , appendList
+        , after
         , appendItem
-        , delete
-        , length
+        , appendList
         , before
         , current
-        , after
-        , toList
-        , map
+        , delete
+        , find
+        , first
+        , foldl
+        , fromList
+        , fromListWithFocus
         , indexedMap
+        , last
+        , length
+        , map
+        , mapAfter
         , mapBefore
         , mapCurrent
-        , mapAfter
-        , foldl
-        , first
-        , previous
         , next
+        , previous
         , safeNext
-        , last
-        , find
+        , singleton
+        , toList
+        , withDefault
         )
 
 {-| A zipper for `List`.
 
+
 # The `Zipper` type
+
 @docs Zipper
 
+
 # Constructing a `Zipper`
+
 @docs singleton, fromList, fromListWithFocus, withDefault, appendItem, appendList
 
+
 # Destructing a `Zipper`
+
 @docs delete
 
+
 # Attributes
+
 @docs length
 
+
 # Accessors
+
 @docs before, current, after, toList
 
+
 # Mapping
+
 @docs map, indexedMap, mapBefore, mapCurrent, mapAfter, foldl
 
+
 # Moving around
+
 @docs first, previous, next, safeNext, last, find
 
 -}
@@ -127,7 +141,7 @@ delete (Zipper ls x rs) =
 
 length : Zipper a -> Int
 length (Zipper ls x rs) =
-    (List.length ls) + 1 + (List.length rs)
+    List.length ls + 1 + List.length rs
 
 
 {-| Returns all elements before the element the `Zipper` is focussed on.
@@ -171,15 +185,15 @@ indexedMap : (Int -> a -> b) -> Zipper a -> Zipper b
 indexedMap f (Zipper ls x rs) =
     let
         newLs =
-            (List.indexedMap f ls)
+            List.indexedMap f ls
 
         ( _, newRs ) =
             List.foldr
-                (\r ( i, nrs ) -> ( i + 1, (f i r) :: nrs ))
-                ( ((List.length ls) + 1), [] )
+                (\r ( i, nrs ) -> ( i + 1, f i r :: nrs ))
+                ( List.length ls + 1, [] )
                 rs
     in
-        Zipper newLs (f (List.length ls) x) newRs
+    Zipper newLs (f (List.length ls) x) newRs
 
 
 {-| Apply a function to all elements before the element the `Zipper` is focussed on.
@@ -193,7 +207,7 @@ mapBefore f ((Zipper _ x rs) as zipper) =
         mappedElementsBefore =
             f elementsBefore
     in
-        Zipper (reverse mappedElementsBefore) x rs
+    Zipper (reverse mappedElementsBefore) x rs
 
 
 {-| Apply a function to the element the `Zipper` is focussed on.
@@ -216,10 +230,10 @@ foldl : (Zipper a -> b -> b) -> b -> Zipper a -> b
 foldl f z ((Zipper ls x rs) as zip) =
     case next zip of
         Nothing ->
-            (f zip z)
+            f zip z
 
         Just nzip ->
-            foldl f (f zip z) (nzip)
+            foldl f (f zip z) nzip
 
 
 {-| Move the focus to the first element of the list.
