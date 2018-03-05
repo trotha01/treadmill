@@ -1,8 +1,5 @@
 module Item exposing (..)
 
-import Animation exposing (px)
-import Animation.Messenger
-import Ease
 import Html exposing (Html)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -27,8 +24,6 @@ type alias Model =
 
 type alias Img =
     { src : String
-
-    -- , style : Animation.Messenger.State msg
     }
 
 
@@ -71,8 +66,6 @@ initItem word imgFocus imgSrcs =
 initImg : String -> Img
 initImg imgSrc =
     { src = imgSrc
-
-    -- , style = Animation.style [ Animation.display Animation.none ]
     }
 
 
@@ -92,80 +85,6 @@ move delta item =
 
 
 
-{--
-startItemAnimation : (Img msg -> msg) -> Int -> Int -> Model msg -> Model msg
-startItemAnimation doneMsg start end item =
-    let
-        newImgs =
-            Zipper.safeNext
-                item.imgs
-    in
-        { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) newImgs }
-
-
-startImgAnimation : (Img msg -> msg) -> Int -> Int -> Img msg -> Img msg
-startImgAnimation doneMsg start end img =
-    { img
-        | style =
-            Animation.interrupt
-                [ Animation.set
-                    [ Animation.left (px <| toFloat start)
-                    , Animation.display Animation.block
-                    ]
-                , Animation.toWith (Animation.easing { duration = Time.second * 7, ease = Ease.linear })
-                    [ Animation.left (px <| toFloat end)
-                    ]
-                , Animation.Messenger.send (doneMsg img)
-                ]
-                img.style
-    }
-
-
-stopItemAnimation : (Img msg -> msg) -> Int -> Int -> Model msg -> Model msg
-stopItemAnimation doneMsg start end item =
-    let
-        newImgs =
-            Zipper.safeNext
-                item.imgs
-    in
-        { item | imgs = Zipper.mapCurrent (startImgAnimation doneMsg start end) newImgs }
-
-
-stopImgAnimation : (Img msg -> msg) -> Int -> Int -> Img msg -> Img msg
-stopImgAnimation doneMsg start end img =
-    { img
-        | style =
-            Animation.interrupt
-                [ Animation.set
-                    [ Animation.left (px <| toFloat start)
-                    ]
-                ]
-                img.style
-    }
-
-
-updateItemAnimation : Animation.Msg -> Model msg -> ( Model msg, Cmd msg )
-updateItemAnimation animMsg item =
-    let
-        ( newImg, cmd ) =
-            item.imgs
-                |> Zipper.current
-                |> updateImgAnimation animMsg
-
-        newImgs =
-            Zipper.mapCurrent (\_ -> newImg) item.imgs
-    in
-        ( { item | imgs = newImgs }, cmd )
-
-
-updateImgAnimation : Animation.Msg -> Img msg -> ( Img msg, Cmd msg )
-updateImgAnimation animMsg img =
-    let
-        ( style, cmd ) =
-            Animation.Messenger.update animMsg img.style
-    in
-        ( { img | style = style }, cmd )
---}
 -- VIEW
 
 
@@ -176,8 +95,7 @@ viewItem clickMsg touchMsg item =
             Zipper.current item.imgs
     in
     Html.img
-        (-- (Animation.render img.style)
-         [ src img.src
+        [ src img.src
          , class "treadmill-item"
          , onClick (clickMsg item)
          , Touch.onTouchStart (touchMsg item)
@@ -189,7 +107,6 @@ viewItem clickMsg touchMsg item =
             , ( "left", px <| getX item.position )
             ]
          ]
-        )
         []
 
 

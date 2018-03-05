@@ -53,8 +53,6 @@ button:active {
 
 /* SPLASH SCREEN */
 .splashscreen-wrap {
-    /* border: .4rem solid purple;*/
-    /* background-color: #6fa8bb;*/
     background-color: slategray;
     text-align: center;
     width: 100vw;

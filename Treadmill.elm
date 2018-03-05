@@ -1,7 +1,5 @@
 module Treadmill exposing (..)
 
-import Animation exposing (px)
-import Animation.Messenger
 import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (..)
@@ -33,8 +31,7 @@ init =
 
 
 type Msg
-    = -- Animate Animation.Msg
-      Tick Time.Time
+    = Tick Time.Time
 
 
 update : Msg -> Belt -> ( Belt, Cmd msg )
@@ -42,13 +39,6 @@ update msg belt =
     case msg of
         Tick delta ->
             ( animate delta belt, Cmd.none )
-
-
-
-{--
-        Animate animMsg ->
-            animate animMsg belt
-            --}
 
 
 addItem : Int -> (Int -> Item.Img -> msg) -> Belt -> Item.Model -> Belt
@@ -79,24 +69,6 @@ animate delta belt =
 
 
 
-{--
-animate : Animation.Msg -> Belt -> ( Belt, Cmd msg )
-animate msg belt =
-    let
-        idsItemsCmds =
-            List.map (\( id, i ) -> ( id, Item.updateItemAnimation msg i )) belt.items
-
-        ( ids, itemCmds ) =
-            List.unzip idsItemsCmds
-
-        ( items, cmds ) =
-            List.unzip itemCmds
-
-        newItems =
-            zip ids items
-    in
-        ( { belt | items = newItems }, Cmd.batch cmds )
--}
 -- VIEW
 
 
@@ -141,38 +113,11 @@ view windowWidth clickMsg touchMsg belt =
 
 -- SUBSCRIPTIONS
 
-
-{-| TODO: move these to Item module?
--}
-
-
-
-{--
-imgStyles : Zipper (Item.Img) -> List (Animation.Messenger.State msg)
-imgStyles imgs =
-    imgs
-        |> Zipper.map .style
-        |> Zipper.toList
-
-
-itemStyles : List ( Int, Item.Model ) -> List (Animation.Messenger.State msg)
-itemStyles items =
-    items
-        |> List.map (Tuple.second >> .imgs >> imgStyles)
-        |> List.concat
-        --}
-
-
 subscription : (Msg -> msg) -> Belt -> Sub msg
 subscription msg belt =
     AnimationFrame.diffs (Tick >> msg)
 
 
-
-{--
-    Animation.subscription (Animate >> msg)
-        (itemStyles belt.items)
-        --}
 -- HELPERS
 
 

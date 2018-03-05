@@ -1,7 +1,6 @@
 module Main exposing (..)
 
 import AnimationFrame
-import BoundingBox exposing (fromCorners, inside)
 import Bowl
 import Html exposing (Html)
 import Html.Attributes exposing (..)
@@ -16,7 +15,6 @@ import Task
 import Time
 import TouchEvents as Touch exposing (..)
 import Treadmill
-import Tuple
 import Window
 import Zipper as Zipper exposing (..)
 
@@ -454,15 +452,6 @@ cakeImgStyle pos =
         [ ( "position", "absolute" )
         , ( "left", (getX pos |> toString) ++ "rem" )
         , ( "top", (getY pos |> toString) ++ "rem" )
-
-        {--
-        , ( "width", "75px" )
-        , ( "height", "75px" )
-        , ( "text-align", "center" )
-        , ( "vertical-align", "middle" )
-        , ( "cursor", "pointer" )
-        , ( "user-select", "none" )
-        --}
         ]
 
 
